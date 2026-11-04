@@ -1,0 +1,43 @@
+// Garagix Design Tokens
+:root {
+  // Brand Colors (Vivid crimson red)
+  --gx-primary: #d70006;
+  --gx-primary-hover: #b80005;
+  --gx-primary-glow: rgba(215, 0, 6, 0.35);
+  --gx-primary-subtle: rgba(215, 0, 6, 0.12);
+
+  --gx-accent: #f97316;
+
+  // Backgrounds & Surfaces (BootLab dark automotive tones)
+  --gx-bg-canvas: #0e0d0d;
+  --gx-bg-surface: #100e0f;
+  --gx-bg-surface-elevated: #121111;
+  --gx-bg-card: #141314;
+  --gx-bg-card-hover: #1a1a1a;
+  --gx-bg-glass: rgba(16, 14, 15, 0.92);
+
+  // Borders & Dividers
+  --gx-border-subtle: #1c1c1d;
+  --gx-border-default: #222222;
+  --gx-border-highlight: #323232;
+  --gx-border-primary: rgba(215, 0, 6, 0.5);
+
+  // Typography
+  --gx-text-primary: #ffffff;
+  --gx-text-secondary: #878f97;
+  --gx-text-muted: #74787c;
+
+  // Fonts
+  --gx-font-sans: 'Montserrat', system-ui, -apple-system, sans-serif;
+  --gx-font-display: 'Oxanium', 'Rajdhani', sans-serif;
+
+  // Layout Radii
+  --gx-radius-md: 6px;
+  --gx-radius-lg: 8px;
+  --gx-radius-xl: 12px;
+  --gx-radius-full: 9999px;
+
+  // Transitions
+  --gx-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --gx-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
