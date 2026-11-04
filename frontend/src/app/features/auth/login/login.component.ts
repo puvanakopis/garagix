@@ -171,20 +171,24 @@ export class LoginComponent {
 
     const email = this.loginForm.get('email')?.value;
     const pass = this.loginForm.get('password')?.value;
+    const rememberMe = this.loginForm.get('rememberMe')?.value || false;
 
-    setTimeout(() => {
-      this.isLoading.set(false);
-      const isAdminLogin = email.toLowerCase().includes('admin');
-      this.authService.login(email, pass, isAdminLogin ? 'admin' : 'customer');
-
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'];
-      if (returnUrl) {
-        this.router.navigateByUrl(returnUrl);
-      } else if (isAdminLogin) {
-        this.router.navigate(['/admin/dashboard']);
-      } else {
-        this.router.navigate(['/customer/dashboard']);
+    this.authService.login(email, pass, 'customer', rememberMe).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+        if (returnUrl) {
+          this.router.navigateByUrl(returnUrl);
+        } else if (res.user?.role === 'admin') {
+          this.router.navigate(['/admin/dashboard']);
+        } else {
+          this.router.navigate(['/customer/dashboard']);
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(err.error?.message || 'Invalid email address or password.');
       }
-    }, 700);
+    });
   }
 }

@@ -125,7 +125,9 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                   <tr class="hover:bg-[#181717] transition-colors">
                     <td class="py-3 px-4">
                       <div class="flex items-center gap-3">
-                        <img [src]="c.avatarUrl" [alt]="c.name" class="w-9 h-9 rounded-full object-cover shrink-0 border border-[#262526]" />
+                        <div class="w-9 h-9 rounded-full bg-[#201517] border border-[#d70006]/30 flex items-center justify-center shrink-0 text-[#d70006] font-bold text-xs font-oxanium">
+                          {{ c.name.charAt(0) }}
+                        </div>
                         <div>
                           <strong class="text-white text-xs block font-oxanium">{{ c.name }}</strong>
                           <span class="text-[10px] text-neutral-400">{{ c.email }}</span>
@@ -136,7 +138,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                     <td class="py-3 px-4 text-xs text-neutral-400 max-w-[200px] truncate">
                       {{ c.address || 'Colombo, Sri Lanka' }}
                     </td>
-                    <td class="py-3 px-4 text-xs">{{ c.memberSince }}</td>
+                    <td class="py-3 px-4 text-xs">{{ (c.createdAt | date:'MMMM yyyy') || 'N/A' }}</td>
                     <td class="py-3 px-4">
                       <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1c1b1c] text-neutral-300 border border-[#262526]">
                         {{ c.totalBookings || 0 }} bookings
@@ -184,7 +186,9 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
           <div class="w-full max-w-2xl bg-[#141314] border border-[#262526] rounded-2xl shadow-2xl overflow-hidden my-8" (click)="$event.stopPropagation()">
             <div class="flex items-center justify-between px-6 py-4 border-b border-[#222222]">
               <div class="flex items-center gap-3">
-                <img [src]="cust.avatarUrl" [alt]="cust.name" class="w-11 h-11 rounded-full object-cover border border-[#262526]" />
+                <div class="w-11 h-11 rounded-full bg-[#201517] border border-[#d70006]/40 flex items-center justify-center shrink-0 text-[#d70006] font-bold text-sm font-oxanium">
+                  {{ cust.name.charAt(0) }}
+                </div>
                 <div>
                   <span class="text-[10px] font-bold uppercase tracking-widest text-[#d70006] font-oxanium">GARAGE CLIENT PROFILE</span>
                   <h3 class="text-lg font-bold font-oxanium text-white">{{ cust.name }}</h3>
@@ -202,7 +206,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                   <div class="text-neutral-400">Email: <strong class="text-white">{{ cust.email }}</strong></div>
                   <div class="text-neutral-400">Phone: <strong class="text-white">{{ cust.phone }}</strong></div>
                   <div class="text-neutral-400">Address: <strong class="text-white">{{ cust.address }}</strong></div>
-                  <div class="text-neutral-400">Registered: <strong class="text-white">{{ cust.memberSince }}</strong></div>
+                  <div class="text-neutral-400">Registered: <strong class="text-white">{{ (cust.createdAt | date:'MMMM yyyy') || 'N/A' }}</strong></div>
                 </div>
 
                 <div class="p-4 rounded-xl bg-[#1c1b1c] border border-[#262526] space-y-2 text-xs">

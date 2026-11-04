@@ -99,11 +99,9 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
 
         <div class="p-3 border-t border-[#222222] bg-[#0c0a0a]">
           <div class="flex items-center gap-3 p-2 rounded-lg bg-[#141314] border border-[#222222]">
-            <img
-              [src]="authService.currentUser()?.avatarUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80'"
-              alt="Admin"
-              class="w-8 h-8 rounded-full object-cover shrink-0"
-            />
+            <div class="w-8 h-8 rounded-full bg-[#201517] border border-[#d70006]/40 flex items-center justify-center shrink-0 text-[#d70006] font-bold text-xs font-oxanium">
+              {{ authService.currentUser()?.name?.charAt(0) || 'A' }}
+            </div>
             <div class="flex-1 min-w-0">
               <p class="text-xs font-semibold text-white truncate">{{ authService.currentUser()?.name }}</p>
               <p class="text-[10px] text-neutral-400 truncate">Workshop Director</p>

@@ -44,7 +44,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
 
         <div class="bg-[#141314] border border-[#222222] rounded-xl px-4 py-3 flex items-center justify-between">
           <span class="text-xs text-neutral-400 font-medium">Member Since</span>
-          <span class="text-base font-bold font-oxanium text-white">{{ user()?.memberSince || '2024' }}</span>
+          <span class="text-base font-bold font-oxanium text-white">{{ (user()?.createdAt | date:'MMMM yyyy') || '2024' }}</span>
         </div>
 
         <div class="bg-[#141314] border border-[#222222] rounded-xl px-4 py-3 flex items-center justify-between">
@@ -93,7 +93,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
                 </div>
                 <div>
                   <label for="profMember" class="text-xs font-semibold text-neutral-300 block mb-1">Account Standing</label>
-                  <input id="profMember" type="text" [value]="'Active Member since ' + (user()?.memberSince || '2024')" disabled class="w-full bg-[#141314] border border-[#262526] rounded-xl px-3.5 py-2.5 text-neutral-500 text-xs sm:text-sm outline-none cursor-not-allowed" />
+                  <input id="profMember" type="text" [value]="'Active Member since ' + ((user()?.createdAt | date:'MMMM yyyy') || '2024')" disabled class="w-full bg-[#141314] border border-[#262526] rounded-xl px-3.5 py-2.5 text-neutral-500 text-xs sm:text-sm outline-none cursor-not-allowed" />
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-export type UserRole = 'customer' | 'admin' | 'guest';
+export type UserRole = 'customer' | 'admin';
 
 export interface User {
   id: string;
@@ -7,8 +7,7 @@ export interface User {
   phone: string;
   address?: string;
   role: UserRole;
-  avatarUrl?: string;
-  memberSince: string;
+  createdAt?: string;
   totalBookings?: number;
   status: 'active' | 'inactive';
 }
@@ -19,3 +18,17 @@ export interface AuthState {
   token: string | null;
 }
 
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  token: string;
+  expiresAt?: string;
+  user?: User;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+  otp?: string;
+  expiresInMinutes?: number;
+}

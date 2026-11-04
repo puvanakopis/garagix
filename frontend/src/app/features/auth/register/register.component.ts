@@ -210,12 +210,17 @@ export class RegisterComponent {
     }
 
     this.isLoading.set(true);
-    const { fullName, email, phone } = this.registerForm.value;
+    const { fullName, email, phone, password } = this.registerForm.value;
 
-    setTimeout(() => {
-      this.isLoading.set(false);
-      this.authService.register(fullName, email, phone);
-      this.router.navigate(['/customer/dashboard']);
-    }, 800);
+    this.authService.register(fullName, email, phone, password).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.router.navigate(['/customer/dashboard']);
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.toast.showError(err.error?.message || 'Registration failed. Please try again.');
+      }
+    });
   }
 }

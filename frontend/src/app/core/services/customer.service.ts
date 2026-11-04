@@ -45,8 +45,7 @@ export class CustomerService {
       phone: '+94 77 123 4567',
       address: 'No. 42/B, Flower Road, Colombo 07',
       role: 'customer',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      memberSince: 'March 2024',
+      createdAt: '2024-03-01T00:00:00Z',
       totalBookings: 3,
       status: 'active'
     },
@@ -57,8 +56,7 @@ export class CustomerService {
       phone: '+94 71 456 7890',
       address: 'No. 18, Queen\'s Road, Colombo 03',
       role: 'customer',
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-      memberSince: 'July 2023',
+      createdAt: '2023-07-15T00:00:00Z',
       totalBookings: 5,
       status: 'active'
     },
@@ -69,8 +67,7 @@ export class CustomerService {
       phone: '+94 76 778 8990',
       address: 'No. 102/3, Havelock Road, Colombo 05',
       role: 'customer',
-      avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
-      memberSince: 'January 2024',
+      createdAt: '2024-01-10T00:00:00Z',
       totalBookings: 2,
       status: 'active'
     },
@@ -81,8 +78,7 @@ export class CustomerService {
       phone: '+94 77 334 4556',
       address: 'No. 55, Galle Road, Mount Lavinia',
       role: 'customer',
-      avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
-      memberSince: 'May 2024',
+      createdAt: '2024-05-20T00:00:00Z',
       totalBookings: 1,
       status: 'active'
     },
@@ -93,8 +89,7 @@ export class CustomerService {
       phone: '+94 71 223 3445',
       address: 'No. 89, Kandy Road, Kadawatha',
       role: 'customer',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-      memberSince: 'August 2023',
+      createdAt: '2023-08-05T00:00:00Z',
       totalBookings: 4,
       status: 'active'
     }
