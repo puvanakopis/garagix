@@ -47,6 +47,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<WorkshopSetting> WorkshopSettings => Set<WorkshopSetting>();
 
+    /// <summary>
+    /// Gets the customer vehicle repair and service bookings database set.
+    /// </summary>
+    public DbSet<Booking> Bookings => Set<Booking>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

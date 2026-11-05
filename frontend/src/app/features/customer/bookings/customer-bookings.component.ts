@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -320,7 +320,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
     </div>
   `
 })
-export class CustomerBookingsComponent {
+export class CustomerBookingsComponent implements OnInit {
   private authService = inject(AuthService);
   private bookingService = inject(BookingService);
   private toast = inject(ToastService);
@@ -349,6 +349,13 @@ export class CustomerBookingsComponent {
   ).length);
   completedCount = computed(() => this.customerBookings().filter(b => b.status === RepairStatus.DELIVERED).length);
   cancelledCount = computed(() => this.customerBookings().filter(b => b.status === RepairStatus.CANCELLED).length);
+
+  ngOnInit(): void {
+    const id = this.customerId();
+    if (id) {
+      this.bookingService.loadCustomerBookings(id).subscribe();
+    }
+  }
 
   filteredBookings = computed(() => {
     let list = this.customerBookings();
@@ -403,10 +410,16 @@ export class CustomerBookingsComponent {
   executeCancellation(): void {
     const b = this.bookingToCancel();
     if (b) {
-      this.bookingService.cancelBooking(b.id, 'Cancelled by customer via Customer Portal');
-      this.toast.showInfo(`Booking ${b.referenceNumber} has been cancelled.`);
-      this.cancelDialogOpen.set(false);
-      this.bookingToCancel.set(null);
+      this.bookingService.cancelBooking(b.id, 'Cancelled by customer via Customer Portal').subscribe({
+        next: () => {
+          this.toast.showInfo(`Booking ${b.referenceNumber} has been cancelled.`);
+          this.cancelDialogOpen.set(false);
+          this.bookingToCancel.set(null);
+        },
+        error: (err) => {
+          this.toast.showError(err?.error?.message || 'Failed to cancel booking.');
+        }
+      });
     }
   }
 

@@ -228,6 +228,59 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
                 logger.LogInformation("Pre-seeded initial garage workshop settings into database.");
             }
+
+            // Explicitly ensure the bookings table exists
+            const string createBookingsTableSql = """
+                CREATE TABLE IF NOT EXISTS `bookings` (
+                    `Id` VARCHAR(50) NOT NULL PRIMARY KEY,
+                    `ReferenceNumber` VARCHAR(50) NOT NULL,
+                    `CustomerId` VARCHAR(50) NOT NULL,
+                    `CustomerName` VARCHAR(120) NOT NULL,
+                    `CustomerPhone` VARCHAR(30) NOT NULL,
+                    `CustomerEmail` VARCHAR(150) NOT NULL,
+                    `VehiclePlateNumber` VARCHAR(30) NOT NULL,
+                    `VehicleBrand` VARCHAR(60) NOT NULL,
+                    `VehicleModel` VARCHAR(80) NOT NULL,
+                    `VehicleYear` INT NOT NULL,
+                    `VehicleMileageKm` INT NULL,
+                    `ServiceIds` LONGTEXT NOT NULL,
+                    `ServiceNames` LONGTEXT NOT NULL,
+                    `ProblemDescription` LONGTEXT NULL,
+                    `Symptoms` LONGTEXT NULL,
+                    `DamageImages` LONGTEXT NULL,
+                    `AssignedMechanicId` VARCHAR(50) NULL,
+                    `AssignedMechanicName` VARCHAR(120) NULL,
+                    `AppointmentDate` VARCHAR(30) NOT NULL,
+                    `AppointmentTime` VARCHAR(30) NOT NULL,
+                    `EstimatedPriceLkr` DECIMAL(12,2) NOT NULL DEFAULT 0,
+                    `FinalPriceLkr` DECIMAL(12,2) NULL,
+                    `Status` VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+                    `ProgressPercent` INT NOT NULL DEFAULT 10,
+                    `EstimatedCompletion` VARCHAR(100) NOT NULL,
+                    `DropOffOption` VARCHAR(30) NOT NULL DEFAULT 'drop_off',
+                    `PaymentStatus` VARCHAR(30) NOT NULL DEFAULT 'pending',
+                    `InternalNotes` LONGTEXT NULL,
+                    `CreatedAt` DATETIME(6) NOT NULL,
+                    `UpdatedAt` DATETIME(6) NULL,
+                    UNIQUE INDEX `IX_bookings_ReferenceNumber` (`ReferenceNumber`),
+                    INDEX `IX_bookings_CustomerId` (`CustomerId`),
+                    INDEX `IX_bookings_VehiclePlateNumber` (`VehiclePlateNumber`),
+                    INDEX `IX_bookings_Status` (`Status`),
+                    INDEX `IX_bookings_AppointmentDate` (`AppointmentDate`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """;
+
+            await context.Database.ExecuteSqlRawAsync(createBookingsTableSql);
+            logger.LogInformation("Database schema initialized and bookings table verified.");
+
+            // Seed initial bookings if table is empty
+            if (!await context.Bookings.AnyAsync())
+            {
+                var initialBookings = Configurations.BookingConfiguration.GetInitialBookings();
+                await context.Bookings.AddRangeAsync(initialBookings);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Pre-seeded {Count} workshop repair bookings into database.", initialBookings.Count);
+            }
         }
         catch (Exception ex)
         {

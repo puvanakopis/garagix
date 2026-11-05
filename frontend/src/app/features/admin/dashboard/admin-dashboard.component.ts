@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BookingService } from '../../../core/services/booking.service';
 import { MechanicService } from '../../../core/services/mechanic.service';
@@ -236,7 +236,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
     </div>
   `
 })
-export class AdminDashboardComponent {
+export class AdminDashboardComponent implements OnInit {
   private bookingService = inject(BookingService);
   private mechanicService = inject(MechanicService);
   private customerService = inject(CustomerService);
@@ -247,6 +247,10 @@ export class AdminDashboardComponent {
   allBookings = this.bookingService.bookings;
   mechanics = this.mechanicService.mechanics;
   customers = this.customerService.customers;
+
+  ngOnInit(): void {
+    this.bookingService.loadBookings().subscribe();
+  }
 
   totalBookings = computed(() => this.allBookings().length);
   pendingCount = computed(() => this.allBookings().filter(b => b.status === RepairStatus.PENDING).length);

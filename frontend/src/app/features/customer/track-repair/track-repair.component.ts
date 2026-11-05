@@ -258,8 +258,9 @@ export class TrackRepairComponent implements OnInit {
 
   searchCode = '';
   currentBooking = signal<Booking | null>(null);
+  isLoading = signal<boolean>(false);
 
-  allBookings = computed(() => this.bookingService.getBookings());
+  allBookings = this.bookingService.bookings;
 
   timelineSteps = computed<RepairProgressStep[]>(() => {
     const b = this.currentBooking();
@@ -273,7 +274,8 @@ export class TrackRepairComponent implements OnInit {
       this.searchCode = ref;
       this.searchBooking();
     } else {
-      const firstActive = this.bookingService.getBookings().find(b => b.status === RepairStatus.IN_PROGRESS) || this.bookingService.getBookings()[0];
+      const activeList = this.bookingService.getBookings();
+      const firstActive = activeList.find(b => b.status === RepairStatus.IN_PROGRESS) || activeList[0];
       if (firstActive) {
         this.currentBooking.set(firstActive);
         this.searchCode = firstActive.referenceNumber;
@@ -282,9 +284,22 @@ export class TrackRepairComponent implements OnInit {
   }
 
   searchBooking(): void {
-    if (!this.searchCode.trim()) return;
-    const found = this.bookingService.getBookingByReference(this.searchCode);
-    this.currentBooking.set(found || null);
+    const clean = this.searchCode.trim();
+    if (!clean) return;
+
+    this.isLoading.set(true);
+    this.bookingService.trackBooking(clean).subscribe({
+      next: (found) => {
+        this.isLoading.set(false);
+        this.currentBooking.set(found);
+      },
+      error: () => {
+        this.isLoading.set(false);
+        // Fallback to local memory cache
+        const local = this.bookingService.getBookingByReference(clean);
+        this.currentBooking.set(local || null);
+      }
+    });
   }
 
   selectSample(ref: string): void {

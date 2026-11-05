@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BookingService } from '../../../core/services/booking.service';
@@ -490,7 +490,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
     </div>
   `
 })
-export class AdminBookingsComponent {
+export class AdminBookingsComponent implements OnInit {
   private bookingService = inject(BookingService);
   private fb = inject(FormBuilder);
   private toast = inject(ToastService);
@@ -532,6 +532,10 @@ export class AdminBookingsComponent {
     internalNotes: ['']
   });
 
+  ngOnInit(): void {
+    this.bookingService.loadBookings().subscribe();
+  }
+
   filteredBookings = computed(() => {
     let list = this.allBookings();
     const st = this.statusFilter();
@@ -555,12 +559,17 @@ export class AdminBookingsComponent {
   });
 
   updateStatus(bookingId: string, status: RepairStatus): void {
-    this.bookingService.updateBookingStatus(bookingId, status);
-    if (this.selectedBooking()?.id === bookingId) {
-      const updated = this.allBookings().find(b => b.id === bookingId);
-      if (updated) this.selectedBooking.set(updated);
-    }
-    this.toast.showSuccess(`Progressed status to ${status.replace('_', ' ')}.`);
+    this.bookingService.updateBookingStatus(bookingId, status).subscribe({
+      next: (updated) => {
+        if (this.selectedBooking()?.id === bookingId) {
+          this.selectedBooking.set(updated);
+        }
+        this.toast.showSuccess(`Progressed status to ${status.replace('_', ' ')}.`);
+      },
+      error: (err) => {
+        this.toast.showError(err?.error?.message || 'Failed to update status.');
+      }
+    });
   }
 
   openDetailsModal(booking: Booking): void {
@@ -601,7 +610,7 @@ export class AdminBookingsComponent {
     if (!b) return;
 
     const val = this.editForm.value;
-    this.bookingService.updateBooking(b.id, {
+    const updates: Partial<Booking> = {
       appointmentDate: val.appointmentDate,
       appointmentTime: val.appointmentTime,
       estimatedPriceLkr: Number(val.estimatedPriceLkr),
@@ -619,15 +628,20 @@ export class AdminBookingsComponent {
       customerEmail: val.customerEmail,
       problemDescription: val.problemDescription,
       internalNotes: val.internalNotes
+    };
+
+    this.bookingService.updateBooking(b.id, updates).subscribe({
+      next: (updated) => {
+        if (this.selectedBooking()?.id === b.id) {
+          this.selectedBooking.set(updated);
+        }
+        this.toast.showSuccess(`Booking ${b.referenceNumber} updated successfully.`);
+        this.closeEditModal();
+      },
+      error: (err) => {
+        this.toast.showError(err?.error?.message || 'Failed to update booking.');
+      }
     });
-
-    if (this.selectedBooking()?.id === b.id) {
-      const updated = this.allBookings().find(item => item.id === b.id);
-      if (updated) this.selectedBooking.set(updated);
-    }
-
-    this.toast.showSuccess(`Booking ${b.referenceNumber} updated successfully.`);
-    this.closeEditModal();
   }
 
   resetFilters(): void {

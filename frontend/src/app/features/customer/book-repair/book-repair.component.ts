@@ -881,51 +881,57 @@ export class BookRepairComponent implements OnInit {
   confirmBooking(): void {
     this.isSubmitting.set(true);
 
-    setTimeout(() => {
-      this.isSubmitting.set(false);
+    const u = this.authService.currentUser();
+    const payload = {
+      customerId: u?.id || '',
+      customerName: this.contactName() || u?.name || 'Customer',
+      customerPhone: this.contactPhone() || u?.phone || '',
+      customerEmail: this.contactEmail() || u?.email || '',
+      vehicle: {
+        plateNumber: this.vehiclePlateNumber(),
+        brand: this.vehicleBrand(),
+        model: this.vehicleModel(),
+        year: this.vehicleYear(),
+        mileageKm: Number(this.newVehicleForm.get('mileageKm')?.value) || 0
+      },
+      serviceIds: this.selectedServiceIds(),
+      serviceNames: this.selectedServices().map(s => s.name),
+      problemDescription: this.problemNotes(),
+      symptoms: this.selectedSymptoms(),
+      damageImages: this.uploadedImages(),
+      preferredMechanicId: this.selectedMechanicId() || undefined,
+      preferredMechanicName: this.assignedMechanicDisplayName(),
+      appointmentDate: this.selectedDate(),
+      appointmentTime: this.selectedTime(),
+      dropOffOption: this.dropOffChoice(),
+      estimatedPriceLkr: this.totalEstimatedPrice()
+    };
 
-      const u = this.authService.currentUser();
-      const booking = this.bookingService.createBooking({
-        customerId: u?.id || '',
-        customerName: this.contactName() || u?.name || 'Customer',
-        customerPhone: this.contactPhone() || u?.phone || '',
-        customerEmail: this.contactEmail() || u?.email || '',
-        vehicle: {
-          plateNumber: this.vehiclePlateNumber(),
-          brand: this.vehicleBrand(),
-          model: this.vehicleModel(),
-          year: this.vehicleYear(),
-          mileageKm: Number(this.newVehicleForm.get('mileageKm')?.value) || 0
-        },
-        serviceIds: this.selectedServiceIds(),
-        serviceNames: this.selectedServices().map(s => s.name),
-        problemDescription: this.problemNotes(),
-        symptoms: this.selectedSymptoms(),
-        damageImages: this.uploadedImages(),
-        preferredMechanicId: this.selectedMechanicId() || undefined,
-        preferredMechanicName: this.assignedMechanicDisplayName(),
-        appointmentDate: this.selectedDate(),
-        appointmentTime: this.selectedTime(),
-        dropOffOption: this.dropOffChoice(),
-        estimatedPriceLkr: this.totalEstimatedPrice()
-      });
+    this.bookingService.createBooking(payload).subscribe({
+      next: (booking) => {
+        this.isSubmitting.set(false);
 
-      if (this.vehicleMode() === 'new' && u?.id) {
-        const nv = this.newVehicleForm.value;
-        this.customerService.addVehicle({
-          customerId: u.id,
-          plateNumber: nv.plateNumber.toUpperCase(),
-          brand: nv.brand,
-          model: nv.model,
-          year: Number(nv.year),
-          type: nv.type,
-          mileageKm: Number(nv.mileageKm)
-        }).subscribe();
+        if (this.vehicleMode() === 'new' && u?.id) {
+          const nv = this.newVehicleForm.value;
+          this.customerService.addVehicle({
+            customerId: u.id,
+            plateNumber: nv.plateNumber.toUpperCase(),
+            brand: nv.brand,
+            model: nv.model,
+            year: Number(nv.year),
+            type: nv.type,
+            mileageKm: Number(nv.mileageKm)
+          }).subscribe();
+        }
+
+        this.confirmedBooking.set(booking);
+        this.toast.showSuccess(`Booking ${booking.referenceNumber} generated successfully!`);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.toast.showError(err?.error?.message || 'Failed to confirm booking appointment. Please try again.');
       }
-
-      this.confirmedBooking.set(booking);
-      this.toast.showSuccess(`Booking ${booking.referenceNumber} generated successfully!`);
-    }, 1000);
+    });
   }
 
   resetWizard(): void {

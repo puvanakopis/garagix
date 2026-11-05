@@ -539,6 +539,7 @@ export class AdminCustomersComponent implements OnInit {
 
   ngOnInit(): void {
     this.customerService.loadCustomers().subscribe();
+    this.bookingService.loadBookings().subscribe();
   }
 
   searchQuery = signal<string>('');

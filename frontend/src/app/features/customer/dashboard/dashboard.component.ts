@@ -230,6 +230,7 @@ export class CustomerDashboardComponent implements OnInit {
     const uid = this.authService.currentUser()?.id;
     if (uid) {
       this.customerService.loadCustomerVehicles(uid).subscribe();
+      this.bookingService.loadCustomerBookings(uid).subscribe();
     }
   }
 
