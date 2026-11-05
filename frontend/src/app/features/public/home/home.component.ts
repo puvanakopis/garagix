@@ -13,7 +13,7 @@ import { RouterLink } from '@angular/router';
       <section class="relative min-h-[85vh] sm:min-h-[90vh] flex items-center py-20 sm:py-32 overflow-hidden bg-gx-canvas">
         <div class="absolute inset-0 bg-hero-overlay z-[1]"></div>
         <img
-          src="/images/home/hero-garage.jpg"
+          src="/images/home/hero-garage-new.jpg"
           alt="Garagix Precision Workshop Hero"
           class="absolute inset-0 w-full h-full object-cover object-center z-0"
         />

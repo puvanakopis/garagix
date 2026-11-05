@@ -102,17 +102,7 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-neutral-300 hover:text-white hover:bg-[#1a1919] transition-all"
           >
             <app-icon name="user" [size]="18" />
-            <span>Admin Profile</span>
-          </a>
-
-          <div class="px-3 pt-4 pb-1 text-[10px] font-bold tracking-widest uppercase text-[#58595b] font-oxanium">PUBLIC SITE</div>
-          <a
-            routerLink="/"
-            (click)="closeMobileSidebar()"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-neutral-300 hover:text-white hover:bg-[#1a1919] transition-all"
-          >
-            <app-icon name="arrow-left" [size]="18" strokeColor="#d70006" />
-            <span>Public Home Page</span>
+            <span>Profile</span>
           </a>
         </nav>
 
@@ -121,10 +111,10 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
             routerLink="/"
             (click)="closeMobileSidebar()"
             class="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg bg-[#141314] hover:bg-[#1c1b1c] border border-[#262526] hover:border-[#d70006]/50 text-xs font-semibold text-neutral-300 hover:text-white transition-all group cursor-pointer"
-            title="Navigate to Garagix Public Home Page"
+            title="Navigate to Garagix Public"
           >
             <app-icon name="arrow-left" [size]="14" strokeColor="#d70006" />
-            <span>Public Home</span>
+            <span>Public Portal</span>
             <app-icon name="external-link" [size]="12" strokeColor="#878f97" />
           </a>
 
@@ -166,7 +156,7 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
             <a
               routerLink="/admin/profile"
               class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#141314] border border-[#222222] hover:border-[#d70006]/40 transition-colors cursor-pointer"
-              title="View Admin Profile"
+              title="View Profile"
             >
               <span class="px-1.5 py-0.5 rounded bg-[#d70006] text-white text-[9px] font-bold font-oxanium">ADMIN</span>
               <span class="text-xs font-medium text-white">{{ authService.currentUser()?.name?.split(' ')?.[0] }}</span>
