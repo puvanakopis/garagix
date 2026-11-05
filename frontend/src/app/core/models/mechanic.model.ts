@@ -21,3 +21,22 @@ export interface Mechanic {
   };
 }
 
+export interface CreateMechanicDto {
+  name: string;
+  title: string;
+  specialization: string;
+  experienceYears: number;
+  rating?: number;
+  reviewCount?: number;
+  bio?: string;
+  imageUrl?: string;
+  status?: 'available' | 'busy' | 'on_leave';
+  phone?: string;
+  email?: string;
+  certifications?: string[];
+  workingHours?: string;
+}
+
+export interface UpdateMechanicDto extends Partial<CreateMechanicDto> {
+  assignedBookingsCount?: number;
+}

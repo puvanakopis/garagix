@@ -32,6 +32,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<ServiceItem> Services => Set<ServiceItem>();
 
+    /// <summary>
+    /// Gets the master workshop technicians and mechanics database set.
+    /// </summary>
+    public DbSet<Mechanic> Mechanics => Set<Mechanic>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

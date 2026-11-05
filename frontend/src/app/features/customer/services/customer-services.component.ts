@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ServiceCatalogService } from '../../../core/services/service-catalog.service';
+import { CarService } from '../../../core/models/service.model';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 
@@ -130,12 +131,13 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 
               <!-- Bottom Actions -->
               <div class="flex items-center justify-between gap-2 pt-3 border-t border-[#1f1e1f]">
-                <a
-                  [routerLink]="['/services', service.slug]"
+                <button
+                  type="button"
+                  (click)="openDetailsModal(service)"
                   class="px-3 py-1.5 rounded-lg bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-neutral-300 hover:text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors cursor-pointer text-center"
                 >
                   Details
-                </a>
+                </button>
                 <a
                   [routerLink]="['/customer/book-repair']"
                   [queryParams]="{ serviceId: service.id }"
@@ -157,6 +159,124 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
           (action)="resetFilters()"
         />
       }
+
+      <!-- 5. Service Details Modal Popup -->
+      @if (selectedService(); as srv) {
+        <div
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto"
+          (click)="closeDetailsModal()"
+        >
+          <div
+            class="w-full max-w-2xl bg-[#141314] border border-[#262526] rounded-2xl shadow-2xl overflow-hidden my-8"
+            (click)="$event.stopPropagation()"
+          >
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-[#222222]">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-[#d70006] font-oxanium">SERVICE SPECIFICATIONS</span>
+                <h3 class="text-lg font-bold font-oxanium text-white tracking-wide mt-0.5">
+                  {{ srv.name }}
+                </h3>
+              </div>
+              <button
+                type="button"
+                class="text-neutral-400 hover:text-white p-1 rounded cursor-pointer transition-colors"
+                (click)="closeDetailsModal()"
+                aria-label="Close modal"
+              >
+                <app-icon name="x" [size]="18" />
+              </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+              <!-- Telemetry Header Cards -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="p-3.5 rounded-xl bg-[#1c1b1c] border border-[#262526]">
+                  <span class="text-[10px] uppercase font-bold text-neutral-400 block font-oxanium">Starting Rate</span>
+                  <span class="text-base sm:text-lg font-bold font-oxanium text-white mt-0.5 block">
+                    LKR {{ srv.startingPriceLkr | number }}
+                  </span>
+                </div>
+                <div class="p-3.5 rounded-xl bg-[#1c1b1c] border border-[#262526]">
+                  <span class="text-[10px] uppercase font-bold text-neutral-400 block font-oxanium">Estimated Duration</span>
+                  <span class="text-base sm:text-lg font-bold font-oxanium text-neutral-200 mt-0.5 block">
+                    {{ srv.durationMinutes }} Mins
+                  </span>
+                </div>
+                <div class="p-3.5 rounded-xl bg-[#1c1b1c] border border-[#262526]">
+                  <span class="text-[10px] uppercase font-bold text-neutral-400 block font-oxanium">Classification</span>
+                  <span class="text-xs sm:text-sm font-bold text-[#d70006] mt-1 block">
+                    {{ srv.category }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Full Description -->
+              <div class="space-y-1.5">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-400 font-oxanium">Package Scope &amp; Procedures</h4>
+                <p class="text-xs sm:text-sm text-neutral-200 leading-relaxed bg-[#100e0f] border border-[#222222] p-4 rounded-xl">
+                  {{ srv.fullDescription || srv.shortDescription }}
+                </p>
+              </div>
+
+              <!-- Included Checks & Deliverables -->
+              @if (srv.includedItems && srv.includedItems.length > 0) {
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-400 font-oxanium mb-2">
+                    Included Checks &amp; Deliverables ({{ srv.includedItems.length }})
+                  </h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @for (item of srv.includedItems; track item) {
+                      <div class="flex items-start gap-2 p-2.5 rounded-lg bg-[#1c1b1c] border border-[#262526] text-xs text-neutral-300">
+                        <app-icon name="check-circle" [size]="14" strokeColor="#d70006" class="mt-0.5 shrink-0" />
+                        <span class="leading-tight">{{ item }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Common Symptoms Addressed -->
+              @if (srv.commonSymptoms && srv.commonSymptoms.length > 0) {
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-400 font-oxanium mb-2">
+                    Common Warning Signs Pinpointed
+                  </h4>
+                  <div class="flex flex-wrap gap-2">
+                    @for (sym of srv.commonSymptoms; track sym) {
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#1c1b1c] border border-[#262526] text-xs text-neutral-300">
+                        <app-icon name="alert-triangle" [size]="12" strokeColor="#f59e0b" />
+                        <span>{{ sym }}</span>
+                      </span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-[#222222] bg-[#100e0f]">
+              <button
+                type="button"
+                class="px-4 py-2 rounded-lg bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-neutral-300 hover:text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors cursor-pointer"
+                (click)="closeDetailsModal()"
+              >
+                Close
+              </button>
+              <a
+                [routerLink]="['/customer/book-repair']"
+                [queryParams]="{ serviceId: srv.id }"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-[#d70006] hover:bg-[#b80005] text-white rounded-lg font-oxanium text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-[#d70006]/20 cursor-pointer"
+                (click)="closeDetailsModal()"
+              >
+                <app-icon name="wrench" [size]="14" />
+                <span>Book This Service</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -165,12 +285,21 @@ export class CustomerServicesComponent implements OnInit {
 
   searchQuery = signal<string>('');
   selectedCategory = signal<string>('ALL');
+  selectedService = signal<CarService | null>(null);
 
   categories = this.serviceCatalog.categories;
   allServices = computed(() => this.serviceCatalog.getServices());
 
   ngOnInit(): void {
     this.serviceCatalog.loadServices(true).subscribe();
+  }
+
+  openDetailsModal(service: CarService): void {
+    this.selectedService.set(service);
+  }
+
+  closeDetailsModal(): void {
+    this.selectedService.set(null);
   }
 
   totalServicesCount = computed(() => this.allServices().length);

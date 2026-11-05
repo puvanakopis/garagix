@@ -109,7 +109,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
             <table class="w-full text-left text-sm text-neutral-300">
               <thead>
                 <tr class="border-b border-[#222222] text-[10px] font-bold uppercase font-oxanium text-neutral-400 bg-[#100e0f]">
-                  <th class="py-3 px-4">Service Visual</th>
                   <th class="py-3 px-4">Service Name &amp; Category</th>
                   <th class="py-3 px-4">Scope &amp; Inclusions</th>
                   <th class="py-3 px-4">Starting Rate</th>
@@ -121,13 +120,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
               <tbody class="divide-y divide-[#1e1c1d]">
                 @for (s of filteredServices(); track s.id) {
                   <tr class="hover:bg-[#181717] transition-colors">
-                    <td class="py-3 px-4">
-                      <button type="button" (click)="openViewModal(s)" class="cursor-pointer block" title="View service details">
-                        <div class="w-10 h-10 rounded-lg bg-[#1c1b1c] border border-[#262526] flex items-center justify-center text-[#d70006] hover:border-[#d70006]/50 transition-colors">
-                          <app-icon name="tool" [size]="16" strokeColor="#d70006" />
-                        </div>
-                      </button>
-                    </td>
                     <td class="py-3 px-4">
                       <button type="button" (click)="openViewModal(s)" class="text-left cursor-pointer group">
                         <strong class="text-white text-xs block font-oxanium group-hover:text-[#d70006] transition-colors">{{ s.name }}</strong>

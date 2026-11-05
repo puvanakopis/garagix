@@ -19,10 +19,10 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
       <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#222222]">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold font-oxanium text-white tracking-tight">
-            Master <span class="text-[#d70006]">Technicians &amp; Bays</span>
+            Master <span class="text-[#d70006]">Technicians</span>
           </h1>
           <p class="text-xs sm:text-sm text-neutral-400 mt-1">
-            Manage workshop technicians, bay assignments, and certifications.
+            Manage workshop master technicians, certifications, and shift schedules.
           </p>
         </div>
         <button
@@ -46,7 +46,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
         </div>
 
         <div class="bg-[#141314] border border-[#222222] rounded-xl px-4 py-3 flex items-center justify-between">
-          <span class="text-xs text-neutral-400 font-medium">Active Bay Jobs</span>
+          <span class="text-xs text-neutral-400 font-medium">Active Assigned Jobs</span>
           <span class="text-base font-bold font-oxanium text-white">{{ totalActiveJobs() }}</span>
         </div>
 
@@ -101,19 +101,19 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                 <div class="py-3.5 space-y-2 text-xs">
                   <div class="flex justify-between">
                     <span class="text-neutral-400">Specialization:</span>
-                    <span class="text-[#d70006] font-semibold font-oxanium">{{ mech.specialization }}</span>
+                    <span class="text-[#d70006] font-semibold font-oxanium truncate max-w-[190px] text-right">{{ mech.specialization }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-neutral-400">Experience:</span>
                     <span class="text-white">{{ mech.experienceYears }} Years</span>
                   </div>
                   <div class="flex justify-between">
-                    <span class="text-neutral-400">Active Bay Load:</span>
+                    <span class="text-neutral-400">Active Load:</span>
                     <span class="text-white font-medium">{{ mech.assignedBookingsCount }} Scheduled</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-neutral-400">Working Hours:</span>
-                    <span class="text-neutral-400 text-[11px]">{{ mech.workingHours }}</span>
+                    <span class="text-neutral-400 text-[11px] truncate max-w-[190px] text-right">{{ mech.workingHours }}</span>
                   </div>
                 </div>
               </div>
@@ -199,6 +199,15 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
               </div>
 
               <div>
+                <label for="mStatus" class="text-xs font-semibold text-neutral-300 block mb-1">Availability Status <span class="text-[#d70006]">*</span></label>
+                <select id="mStatus" formControlName="status" class="w-full bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-xl px-3.5 py-2.5 text-white text-xs sm:text-sm outline-none transition-colors cursor-pointer">
+                  <option value="available">Available</option>
+                  <option value="busy">Busy (On Active Repair)</option>
+                  <option value="on_leave">On Leave / Off-Duty</option>
+                </select>
+              </div>
+
+              <div>
                 <label class="text-xs font-semibold text-neutral-300 block mb-2">Avatar Photo</label>
                 <div class="flex items-center gap-4 p-3 bg-[#1c1b1c] border border-[#262526] rounded-xl">
                   <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-[#262526] bg-[#141314] shrink-0 flex items-center justify-center">
@@ -245,6 +254,11 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                 </div>
               </div>
 
+              <div>
+                <label for="mBio" class="text-xs font-semibold text-neutral-300 block mb-1">Engineering Bio</label>
+                <textarea id="mBio" rows="2" formControlName="bio" placeholder="Technician specialties, manufacturer certifications..." class="w-full bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-xl p-3 text-white text-xs sm:text-sm outline-none transition-colors"></textarea>
+              </div>
+
               <div class="flex items-center justify-end gap-3 pt-4 border-t border-[#222222]">
                 <button
                   type="button"
@@ -255,10 +269,10 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                 </button>
                 <button
                   type="submit"
-                  [disabled]="mechForm.invalid"
+                  [disabled]="mechForm.invalid || isSaving()"
                   class="px-4 py-2 rounded-lg text-xs font-bold font-oxanium uppercase tracking-wider bg-[#d70006] hover:bg-[#b80005] text-white shadow-lg shadow-[#d70006]/20 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  {{ editingMechanicId() ? 'Save Profile' : 'Register Technician' }}
+                  {{ isSaving() ? 'Saving...' : (editingMechanicId() ? 'Save Profile' : 'Register Technician') }}
                 </button>
               </div>
             </form>
@@ -270,7 +284,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
       @if (viewingMechanic(); as mech) {
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto" (click)="closeViewModal()">
           <div class="w-full max-w-xl bg-[#141314] border border-[#262526] rounded-2xl shadow-2xl overflow-hidden my-8" (click)="$event.stopPropagation()">
-            <!-- Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-[#222222]">
               <div>
                 <span class="text-[10px] font-bold uppercase tracking-widest text-[#d70006] font-oxanium">TECHNICIAN DOSSIER</span>
@@ -283,9 +296,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
               </button>
             </div>
 
-            <!-- Content -->
             <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-              <!-- Profile Top Row -->
               <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-xl bg-[#1c1b1c] border border-[#262526]">
                 <img
                   [src]="mech.imageUrl"
@@ -309,23 +320,17 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                 </div>
               </div>
 
-              <!-- Key Metrics Grid -->
-              <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="grid grid-cols-2 gap-3 text-center">
                 <div class="p-3 rounded-xl bg-[#1c1b1c] border border-[#262526]">
                   <span class="text-[10px] text-neutral-400 uppercase font-oxanium block">Experience</span>
                   <strong class="text-sm font-bold text-white font-oxanium mt-0.5 block">{{ mech.experienceYears }} Years</strong>
                 </div>
                 <div class="p-3 rounded-xl bg-[#1c1b1c] border border-[#262526]">
-                  <span class="text-[10px] text-neutral-400 uppercase font-oxanium block">Bay Allocation</span>
+                  <span class="text-[10px] text-neutral-400 uppercase font-oxanium block">Active Scheduled Jobs</span>
                   <strong class="text-sm font-bold text-white font-oxanium mt-0.5 block">{{ mech.assignedBookingsCount }} Jobs</strong>
-                </div>
-                <div class="p-3 rounded-xl bg-[#1c1b1c] border border-[#262526]">
-                  <span class="text-[10px] text-neutral-400 uppercase font-oxanium block">Working Shift</span>
-                  <strong class="text-xs font-medium text-neutral-300 mt-0.5 block truncate" [title]="mech.workingHours">{{ mech.workingHours || 'Standard' }}</strong>
                 </div>
               </div>
 
-              <!-- Engineering Bio -->
               @if (mech.bio) {
                 <div>
                   <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-400 font-oxanium mb-1.5">Engineering Bio</h4>
@@ -335,7 +340,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                 </div>
               }
 
-              <!-- Factory Certifications -->
               @if (mech.certifications && mech.certifications.length > 0) {
                 <div>
                   <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-400 font-oxanium mb-2">Factory &amp; Guild Certifications</h4>
@@ -351,7 +355,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
               }
             </div>
 
-            <!-- Footer -->
             <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-[#222222] bg-[#100e0f]">
               <button
                 type="button"
@@ -392,6 +395,7 @@ export class AdminMechanicsComponent {
   private toast = inject(ToastService);
 
   allMechanics = this.mechanicService.mechanics;
+  isSaving = signal<boolean>(false);
 
   searchQuery = signal<string>('');
   showFormModal = signal<boolean>(false);
@@ -417,11 +421,11 @@ export class AdminMechanicsComponent {
     name: ['', Validators.required],
     title: ['', Validators.required],
     specialization: ['', Validators.required],
-    experienceYears: [8, [Validators.required, Validators.min(1)]],
+    experienceYears: [8, [Validators.required, Validators.min(0)]],
     status: ['available', Validators.required],
     workingHours: ['8:00 AM - 5:30 PM (Mon - Sat)'],
     bio: [''],
-    imageUrl: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80']
+    imageUrl: ['/images/team/mechanic-1.png']
   });
 
   filteredMechanics = computed(() => {
@@ -502,29 +506,47 @@ export class AdminMechanicsComponent {
 
   saveMechanic(): void {
     if (this.mechForm.invalid) return;
+    this.isSaving.set(true);
     const val = this.mechForm.value;
     const editId = this.editingMechanicId();
 
     if (editId) {
-      this.mechanicService.updateMechanic(editId, val);
-      this.toast.showSuccess(`Updated ${val.name}'s profile.`);
+      this.mechanicService.updateMechanic(editId, val).subscribe({
+        next: (res) => {
+          this.toast.showSuccess(`Updated ${res.name}'s profile.`);
+          this.isSaving.set(false);
+          this.closeFormModal();
+        },
+        error: () => {
+          this.toast.showError('Failed to update technician profile.');
+          this.isSaving.set(false);
+        }
+      });
     } else {
       this.mechanicService.addMechanic({
         name: val.name,
         title: val.title,
         specialization: val.specialization,
         experienceYears: Number(val.experienceYears),
-        rating: 4.9,
-        reviewCount: 1,
+        rating: 5.0,
+        reviewCount: 0,
         bio: val.bio || 'Certified specialist technician.',
         imageUrl: val.imageUrl || '/images/team/mechanic-1.png',
         status: val.status || 'available',
         certifications: ['Automotive Guild Member'],
         workingHours: val.workingHours
+      }).subscribe({
+        next: (res) => {
+          this.toast.showSuccess(`Registered ${res.name} to technician directory.`);
+          this.isSaving.set(false);
+          this.closeFormModal();
+        },
+        error: () => {
+          this.toast.showError('Failed to register technician.');
+          this.isSaving.set(false);
+        }
       });
-      this.toast.showSuccess(`Registered ${val.name} to garage bay registry.`);
     }
-    this.closeFormModal();
   }
 
   requestDelete(m: Mechanic): void {
@@ -535,11 +557,18 @@ export class AdminMechanicsComponent {
   confirmDelete(): void {
     const m = this.mechanicToDelete();
     if (m) {
-      this.mechanicService.deleteMechanic(m.id);
-      this.toast.showSuccess(`Removed ${m.name} from registry.`);
+      this.mechanicService.deleteMechanic(m.id).subscribe({
+        next: () => {
+          this.toast.showSuccess(`Removed ${m.name} from registry.`);
+          this.deleteDialogOpen.set(false);
+          this.mechanicToDelete.set(null);
+        },
+        error: () => {
+          this.toast.showError(`Failed to remove ${m.name}.`);
+          this.deleteDialogOpen.set(false);
+        }
+      });
     }
-    this.deleteDialogOpen.set(false);
-    this.mechanicToDelete.set(null);
   }
 
   resetFilters(): void {

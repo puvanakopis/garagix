@@ -1,191 +1,163 @@
-import { Injectable, signal } from '@angular/core';
-import { Mechanic } from '../models/mechanic.model';
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, catchError, of, tap, throwError } from 'rxjs';
+import {
+  Mechanic,
+  CreateMechanicDto,
+  UpdateMechanicDto
+} from '../models/mechanic.model';
+import { environment } from '../../../environments/environment';
 
+/**
+ * Service managing workshop master technicians.
+ * Communicates with live backend REST API endpoints and manages reactive Signal state.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class MechanicService {
-  private initialMechanics: Mechanic[] = [
-    {
-      id: 'mech-1',
-      name: 'Rohan Jayawardena',
-      title: 'Tire & Suspension Master',
-      specialization: 'High-Performance Wheel & Chassis Dynamics',
-      experienceYears: 12,
-      rating: 4.9,
-      reviewCount: 178,
-      bio: 'Specialist in 3D laser alignment, computerized dynamic balancing, and racing tire compound fitments. Over 12 years of workshop excellence.',
-      imageUrl: '/images/team/mechanic-1.png',
-      status: 'available',
-      assignedBookingsCount: 3,
-      certifications: ['Hunter 3D Alignment Master', 'Michelin Certified Specialist'],
-      workingHours: '8:00 AM - 5:30 PM (Mon - Sat)'
-    },
-    {
-      id: 'mech-2',
-      name: 'Kasun Perera',
-      title: 'Chief Diagnostics Engineer',
-      specialization: 'ECU Programming & Oscilloscope Scans',
-      experienceYears: 14,
-      rating: 5.0,
-      reviewCount: 230,
-      bio: 'Leading electrical diagnostics authority in Sri Lanka. Expert in CAN-bus communication, Bosch computerized scanning, and hybrid inverter diagnostics.',
-      imageUrl: '/images/team/mechanic-2.png',
-      status: 'available',
-      assignedBookingsCount: 4,
-      certifications: ['Bosch Master Diagnostic Tech', 'Toyota T-TEN Master', 'ASE L1 Certified'],
-      workingHours: '8:00 AM - 6:00 PM (Mon - Sat)'
-    },
-    {
-      id: 'mech-3',
-      name: 'Marcus Cole',
-      title: 'Brake & Transmission Tech',
-      specialization: 'Dual-Clutch Transmissions & Ceramic Brakes',
-      experienceYears: 11,
-      rating: 4.8,
-      reviewCount: 142,
-      bio: 'Master technician specialized in DSG, ZF 8-speed, and CVT gearboxes alongside high-performance Brembo brake system overhauls.',
-      imageUrl: '/images/team/mechanic-3.png',
-      status: 'busy',
-      assignedBookingsCount: 5,
-      certifications: ['ZF ProTech Certified', 'Brembo Brake Specialist'],
-      workingHours: '8:30 AM - 6:00 PM (Mon - Sat)'
-    },
-    {
-      id: 'mech-4',
-      name: 'Devon Brooks',
-      title: 'Powertrain & Turbo Specialist',
-      specialization: 'Forced Induction & Fuel Injection Systems',
-      experienceYears: 9,
-      rating: 4.9,
-      reviewCount: 115,
-      bio: 'Passionate performance mechanic focusing on turbocharger maintenance, high-pressure common rail diesel, and direct injection carbon cleaning.',
-      imageUrl: '/images/team/mechanic-4.png',
-      status: 'available',
-      assignedBookingsCount: 2,
-      certifications: ['Garrett Turbo Authorized Tech', 'Denso Fuel Injection Master'],
-      workingHours: '8:00 AM - 5:00 PM (Mon - Sat)'
-    },
-    {
-      id: 'mech-5',
-      name: 'Nuwan Fernando',
-      title: 'Body & Chassis Specialist',
-      specialization: 'Chassis Alignment & High-End Body Craft',
-      experienceYears: 15,
-      rating: 4.9,
-      reviewCount: 198,
-      bio: 'Master of structural collision repair, computer laser chassis pullers, and mirror-finish paint restoration. Certified across luxury Euro brands.',
-      imageUrl: '/images/team/mechanic-5.png',
-      status: 'available',
-      assignedBookingsCount: 3,
-      certifications: ['I-CAR Platinum Body Specialist', 'PPG Master Painter'],
-      workingHours: '9:00 AM - 6:30 PM (Mon - Sat)'
-    },
-    {
-      id: 'mech-6',
-      name: 'Robert Kowalski',
-      title: 'Engine Overhaul Master',
-      specialization: 'Complete Engine Rebuilds & Block Machining',
-      experienceYears: 16,
-      rating: 5.0,
-      reviewCount: 260,
-      bio: 'Over 16 years rebuilding V6, V8, and hybrid internal combustion engines. Micro-tolerance crankshaft balancing and valve train machining.',
-      imageUrl: '/images/team/mechanic-6.png',
-      status: 'available',
-      assignedBookingsCount: 3,
-      certifications: ['ASE Master Engine Machinist', 'BMW Master Certified'],
-      workingHours: '8:00 AM - 6:00 PM (Mon - Sat)'
-    }
-  ];
+  private http = inject(HttpClient);
+  private mechanicsUrl = `${environment.apiUrl}/mechanics`;
 
-  private mechanicsSignal = signal<Mechanic[]>(this.loadMechanics());
+  private mechanicsSignal = signal<Mechanic[]>([]);
+  private loadingSignal = signal<boolean>(false);
+  private errorSignal = signal<string | null>(null);
 
   readonly mechanics = this.mechanicsSignal.asReadonly();
+  readonly isLoading = this.loadingSignal.asReadonly();
+  readonly error = this.errorSignal.asReadonly();
 
-  private loadMechanics(): Mechanic[] {
-    const version = 'v5_no_technician_contact';
-    const savedVersion = localStorage.getItem('garagix_mechanics_version');
-    if (savedVersion !== version) {
-      localStorage.setItem('garagix_mechanics_version', version);
-      localStorage.setItem('garagix_mechanics', JSON.stringify(this.initialMechanics));
-      return this.initialMechanics;
-    }
-    const saved = localStorage.getItem('garagix_mechanics');
-    if (saved) {
-      try {
-        const parsed: Mechanic[] = JSON.parse(saved);
-        return parsed.map(m => {
-          let img = m.imageUrl || '/images/team/mechanic-1.png';
-          if (img.startsWith('/images/team/mechanic-') && img.endsWith('.jpg')) {
-            img = img.replace(/\.jpg$/, '.png');
-          }
-          return { ...m, imageUrl: img };
-        });
-      } catch {
-        return this.initialMechanics;
-      }
-    }
-    return this.initialMechanics;
+  constructor() {
+    this.loadMechanics().subscribe({
+      error: (err) => console.error('Failed to load initial mechanics:', err)
+    });
   }
 
-  private saveMechanics(data: Mechanic[]) {
-    this.mechanicsSignal.set(data);
-    localStorage.setItem('garagix_mechanics', JSON.stringify(data));
+  /**
+   * Fetches all technicians from the backend API.
+   * Publicly accessible without authentication.
+   */
+  loadMechanics(status?: string, search?: string): Observable<Mechanic[]> {
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+
+    let params = new HttpParams();
+    if (status) params = params.set('status', status);
+    if (search && search.trim()) params = params.set('search', search.trim());
+
+    return this.http.get<Mechanic[]>(this.mechanicsUrl, { params }).pipe(
+      tap({
+        next: (items) => {
+          this.mechanicsSignal.set(items ?? []);
+          this.loadingSignal.set(false);
+        },
+        error: () => {
+          this.errorSignal.set('Failed to load technicians from server.');
+          this.loadingSignal.set(false);
+        }
+      }),
+      catchError(() => of(this.mechanicsSignal()))
+    );
   }
 
+  /**
+   * Returns a cached mechanic by unique identifier.
+   */
   getMechanicById(id: string): Mechanic | undefined {
-    return this.mechanics().find(m => m.id === id);
+    return this.mechanicsSignal().find(m => m.id === id);
   }
 
-  addMechanic(mechanic: Omit<Mechanic, 'id' | 'assignedBookingsCount'>): Mechanic {
-    const newMechanic: Mechanic = {
-      ...mechanic,
-      id: `mech-${Date.now()}`,
-      assignedBookingsCount: 0
-    };
-    const updated = [...this.mechanics(), newMechanic];
-    this.saveMechanics(updated);
-    return newMechanic;
+  /**
+   * Fetches single mechanic directly from backend API.
+   */
+  fetchMechanicById(id: string): Observable<Mechanic> {
+    return this.http.get<Mechanic>(`${this.mechanicsUrl}/${id}`).pipe(
+      tap((mech) => {
+        this.mechanicsSignal.update(current => {
+          const idx = current.findIndex(m => m.id === mech.id);
+          if (idx >= 0) {
+            const copy = [...current];
+            copy[idx] = mech;
+            return copy;
+          }
+          return [...current, mech];
+        });
+      })
+    );
   }
 
-  updateMechanic(id: string, updates: Partial<Mechanic>): boolean {
-    const current = this.mechanics();
-    const index = current.findIndex(m => m.id === id);
-    if (index === -1) return false;
-
-    const updated = [...current];
-    updated[index] = { ...updated[index], ...updates };
-    this.saveMechanics(updated);
-    return true;
+  /**
+   * Registers a new technician (Admin only).
+   */
+  addMechanic(mechanic: CreateMechanicDto): Observable<Mechanic> {
+    return this.http.post<Mechanic>(this.mechanicsUrl, mechanic).pipe(
+      tap((created) => {
+        this.mechanicsSignal.update(list => [...list, created]);
+      }),
+      catchError((err) => throwError(() => err))
+    );
   }
 
-  deleteMechanic(id: string): boolean {
-    const current = this.mechanics();
-    const filtered = current.filter(m => m.id !== id);
-    if (filtered.length === current.length) return false;
-    this.saveMechanics(filtered);
-    return true;
+  /**
+   * Updates an existing technician (Admin only).
+   */
+  updateMechanic(id: string, updates: UpdateMechanicDto): Observable<Mechanic> {
+    return this.http.put<Mechanic>(`${this.mechanicsUrl}/${id}`, updates).pipe(
+      tap((updated) => {
+        this.mechanicsSignal.update(list =>
+          list.map(m => (m.id === id ? updated : m))
+        );
+      }),
+      catchError((err) => throwError(() => err))
+    );
+  }
+
+  /**
+   * Deletes a technician from the roster (Admin only).
+   */
+  deleteMechanic(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.mechanicsUrl}/${id}`).pipe(
+      tap(() => {
+        this.mechanicsSignal.update(list => list.filter(m => m.id !== id));
+      }),
+      catchError((err) => throwError(() => err))
+    );
+  }
+
+  /**
+   * Updates availability status of a technician.
+   */
+  updateMechanicStatus(id: string, status: 'available' | 'busy' | 'on_leave'): Observable<Mechanic> {
+    return this.http.patch<Mechanic>(`${this.mechanicsUrl}/${id}/status`, null, {
+      params: { status }
+    }).pipe(
+      tap((updated) => {
+        this.mechanicsSignal.update(list =>
+          list.map(m => (m.id === id ? updated : m))
+        );
+      })
+    );
   }
 
   getFeaturedMechanics(limit: number = 3): Mechanic[] {
-    return this.mechanics().slice(0, limit);
+    return this.mechanicsSignal().slice(0, limit);
   }
 
   getAvailableMechanics(): Mechanic[] {
-    return this.mechanics().filter(m => m.status === 'available');
+    return this.mechanicsSignal().filter(m => m.status === 'available');
   }
 
   incrementBookingCount(id: string): void {
     const mech = this.getMechanicById(id);
     if (mech) {
-      this.updateMechanic(id, { assignedBookingsCount: mech.assignedBookingsCount + 1 });
+      this.updateMechanic(id, { assignedBookingsCount: (mech.assignedBookingsCount || 0) + 1 }).subscribe();
     }
   }
 
   decrementBookingCount(id: string): void {
     const mech = this.getMechanicById(id);
     if (mech && mech.assignedBookingsCount > 0) {
-      this.updateMechanic(id, { assignedBookingsCount: mech.assignedBookingsCount - 1 });
+      this.updateMechanic(id, { assignedBookingsCount: mech.assignedBookingsCount - 1 }).subscribe();
     }
   }
 }

@@ -86,6 +86,43 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
                 logger.LogInformation("Pre-seeded {Count} initial vehicle service packages into database.", initialServices.Count);
             }
+
+            // Explicitly ensure the mechanics table exists
+            const string createMechanicsTableSql = """
+                CREATE TABLE IF NOT EXISTS `mechanics` (
+                    `Id` VARCHAR(50) NOT NULL PRIMARY KEY,
+                    `Name` VARCHAR(120) NOT NULL,
+                    `Title` VARCHAR(150) NOT NULL,
+                    `Specialization` VARCHAR(200) NOT NULL,
+                    `ExperienceYears` INT NOT NULL DEFAULT 1,
+                    `Rating` DECIMAL(3,1) NOT NULL DEFAULT 5.0,
+                    `ReviewCount` INT NOT NULL DEFAULT 0,
+                    `Bio` LONGTEXT NULL,
+                    `ImageUrl` VARCHAR(500) NULL,
+                    `Status` VARCHAR(20) NOT NULL DEFAULT 'available',
+                    `Phone` VARCHAR(30) NULL,
+                    `Email` VARCHAR(150) NULL,
+                    `AssignedBookingsCount` INT NOT NULL DEFAULT 0,
+                    `Certifications` LONGTEXT NULL,
+                    `WorkingHours` VARCHAR(100) NOT NULL DEFAULT '8:00 AM - 5:30 PM (Mon - Sat)',
+                    `SocialsJson` LONGTEXT NULL,
+                    `CreatedAt` DATETIME(6) NOT NULL,
+                    `UpdatedAt` DATETIME(6) NULL,
+                    INDEX `IX_mechanics_Status` (`Status`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """;
+
+            await context.Database.ExecuteSqlRawAsync(createMechanicsTableSql);
+            logger.LogInformation("Database schema initialized and mechanics table verified.");
+
+            // Seed mechanics if table is empty
+            if (!await context.Mechanics.AnyAsync())
+            {
+                var initialMechanics = Configurations.MechanicConfiguration.GetInitialMechanics();
+                await context.Mechanics.AddRangeAsync(initialMechanics);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Pre-seeded {Count} initial master technicians into database.", initialMechanics.Count);
+            }
         }
         catch (Exception ex)
         {
