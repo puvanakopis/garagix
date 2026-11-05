@@ -119,19 +119,14 @@ export type ResetStep = 'email' | 'otp' | 'password' | 'success';
             </p>
           </div>
 
-          <!-- Instant OTP Display Box (Eliminating the need for external email retrieval) -->
-          <div class="bg-[#151213] border border-[#d70006]/40 p-4 rounded-xl mb-6 text-center space-y-2">
+          <!-- Verification Code Notice -->
+          <div class="bg-[#151213] border border-[#262526] p-4 mb-6 text-center space-y-2">
             <div class="flex items-center justify-center gap-1.5 text-xs text-neutral-300">
-              <app-icon name="shield" [size]="14" strokeColor="#d70006" />
-              <span>Instant Verification Passcode:</span>
-            </div>
-            <div class="flex items-center justify-center gap-2">
-              <span class="font-oxanium text-2xl sm:text-3xl font-extrabold tracking-[0.25em] text-[#d70006] select-all bg-[#200f12] px-4 py-1.5 rounded-lg border border-[#d70006]/50">
-                {{ generatedOtp() }}
-              </span>
+              <app-icon name="mail" [size]="14" strokeColor="#d70006" />
+              <span>Verification Code Dispatched</span>
             </div>
             <p class="text-[11px] text-neutral-400">
-              Enter the 6-digit code above to authorize your password update.
+              We have sent a 6-digit verification code to <strong class="text-white">{{ userEmail() }}</strong>. Please check your inbox.
             </p>
           </div>
 
@@ -306,7 +301,6 @@ export class ForgotPasswordComponent {
 
   currentStep = signal<ResetStep>('email');
   userEmail = signal<string>('');
-  generatedOtp = signal<string>('');
   otpError = signal<string>('');
   submitting = signal<boolean>(false);
   showPassword = signal<boolean>(false);
@@ -371,24 +365,16 @@ export class ForgotPasswordComponent {
     this.submitting.set(true);
 
     this.authService.forgotPassword(email).subscribe({
-      next: (res) => {
+      next: () => {
         this.submitting.set(false);
-        const otpCode = res.otp || Math.floor(100000 + Math.random() * 900000).toString();
-        this.generatedOtp.set(otpCode);
         this.otpError.set('');
         this.otpForm.reset();
         this.currentStep.set('otp');
-        this.toast.showSuccess(`Verification code dispatched to ${email}.`, 'OTP Ready');
+        this.toast.showSuccess(`Verification code dispatched to ${email}.`, 'OTP Dispatched');
       },
       error: (err) => {
-        // Fallback for offline or local preview
         this.submitting.set(false);
-        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        this.generatedOtp.set(otpCode);
-        this.otpError.set('');
-        this.otpForm.reset();
-        this.currentStep.set('otp');
-        this.toast.showInfo(err.error?.message || `Demo code ${otpCode} issued.`);
+        this.toast.showError(err.error?.message || 'Failed to dispatch verification code. Please check your email.');
       }
     });
   }
@@ -411,32 +397,23 @@ export class ForgotPasswordComponent {
       },
       error: (err) => {
         this.submitting.set(false);
-        if (entered === this.generatedOtp()) {
-          this.otpError.set('');
-          this.currentStep.set('password');
-          this.toast.showSuccess('OTP verified successfully! Please set your new password.', 'Identity Confirmed');
-        } else {
-          this.otpError.set(err.error?.message || 'Incorrect verification code. Please check and try again.');
-        }
+        this.otpError.set(err.error?.message || 'Incorrect verification code. Please check and try again.');
       }
     });
   }
 
   resendOtp(): void {
-    this.authService.forgotPassword(this.userEmail()).subscribe({
-      next: (res) => {
-        const newCode = res.otp || Math.floor(100000 + Math.random() * 900000).toString();
-        this.generatedOtp.set(newCode);
+    const email = this.userEmail();
+    if (!email) return;
+
+    this.authService.forgotPassword(email).subscribe({
+      next: () => {
         this.otpForm.reset();
         this.otpError.set('');
-        this.toast.showInfo(`New verification code: ${newCode}`, 'New OTP Issued');
+        this.toast.showSuccess(`New verification code dispatched to ${email}.`, 'Code Re-sent');
       },
-      error: () => {
-        const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-        this.generatedOtp.set(newCode);
-        this.otpForm.reset();
-        this.otpError.set('');
-        this.toast.showInfo(`New verification code: ${newCode}`, 'New OTP Issued');
+      error: (err) => {
+        this.toast.showError(err.error?.message || 'Failed to resend code. Please try again.');
       }
     });
   }
@@ -455,7 +432,7 @@ export class ForgotPasswordComponent {
 
     this.submitting.set(true);
     const newPass = this.passwordForm.get('newPassword')?.value;
-    const otp = this.otpForm.get('otp')?.value?.trim() || this.generatedOtp();
+    const otp = this.otpForm.get('otp')?.value?.trim();
 
     this.authService.resetPassword(this.userEmail(), otp, newPass).subscribe({
       next: () => {
@@ -465,8 +442,7 @@ export class ForgotPasswordComponent {
       },
       error: (err) => {
         this.submitting.set(false);
-        this.currentStep.set('success');
-        this.toast.showSuccess('Your password has been successfully reset.');
+        this.toast.showError(err.error?.message || 'Password reset failed. Please check your OTP and try again.');
       }
     });
   }

@@ -3,8 +3,14 @@ using Garagix.Api.DTOs.Requests;
 
 namespace Garagix.Api.Validators;
 
+/// <summary>
+/// Validator for the customer registration request payload.
+/// </summary>
 public class RegisterValidator : AbstractValidator<RegisterRequest>
 {
+    /// <summary>
+    /// Initializes validation rules for the customer registration request.
+    /// </summary>
     public RegisterValidator()
     {
         RuleFor(x => x.FullName)
@@ -27,5 +33,12 @@ public class RegisterValidator : AbstractValidator<RegisterRequest>
         RuleFor(x => x.ConfirmPassword)
             .NotEmpty().WithMessage("Confirm Password is required.")
             .Equal(x => x.Password).WithMessage("Passwords do not match.");
+
+        When(x => !string.IsNullOrEmpty(x.Otp), () =>
+        {
+            RuleFor(x => x.Otp)
+                .Length(6).WithMessage("Verification code must be exactly 6 digits.")
+                .Matches(@"^[0-9]{6}$").WithMessage("Verification code must consist of 6 numeric digits.");
+        });
     }
 }

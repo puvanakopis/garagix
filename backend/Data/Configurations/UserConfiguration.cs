@@ -1,11 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Garagix.Api.Common.Utilities;
 using Garagix.Api.Entities;
 
 namespace Garagix.Api.Data.Configurations;
 
+/// <summary>
+/// Entity Framework Core entity mapping configuration and seed data for the <see cref="User"/> entity.
+/// Configures table schemas, unique constraints, property rules, and automatic password hashing conversions.
+/// </summary>
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.ToTable("users");
@@ -19,10 +25,19 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Address).HasMaxLength(250);
         builder.Property(u => u.Role).IsRequired().HasMaxLength(20);
         builder.Property(u => u.Status).IsRequired().HasMaxLength(20);
-        builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(255);
+        
+        // Converts plain text password automatically into a secure BCrypt password hash upon saving
+        builder.Property(u => u.PasswordHash)
+            .IsRequired()
+            .HasMaxLength(255)
+            .HasConversion(
+                passwordOrHash => ConvertToPasswordHash(passwordOrHash),
+                hashFromDb => hashFromDb
+            );
+
         builder.Property(u => u.PasswordResetOtp).HasMaxLength(10);
 
-        // Seed default Admin user
+        // Seed default Admin user ("Admin@123")
         builder.HasData(new User
         {
             Id = "admin-001",
@@ -33,12 +48,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             Role = "admin",
             TotalBookings = 0,
             Status = "active",
-            // BCrypt hash for "Admin@123"
-            PasswordHash = "$2a$11$0FfM4pIekhS9f37jD2oZwe4l9QpE9dYvXU8WwM9W0w3m0k1pX.g5a",
+            PasswordHash = ConvertToPasswordHash("Admin@123"),
             CreatedAt = new DateTime(2022, 1, 15, 0, 0, 0, DateTimeKind.Utc)
         });
 
-        // Seed default Customer user
+        // Seed default Customer user ("Customer@123")
         builder.HasData(new User
         {
             Id = "cust-101",
@@ -49,10 +63,41 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             Role = "customer",
             TotalBookings = 4,
             Status = "active",
-            // BCrypt hash for "Customer@123"
-            PasswordHash = "$2a$11$X0rD9pQekhS9f37jD2oZwe4l9QpE9dYvXU8WwM9W0w3m0k1pX.g5b",
+            PasswordHash = ConvertToPasswordHash("Customer@123"),
             CreatedAt = new DateTime(2024, 3, 1, 0, 0, 0, DateTimeKind.Utc)
         });
     }
-}
 
+    /// <summary>
+    /// Converts a plain text password into a secure BCrypt password hash.
+    /// If the incoming string is already a formatted BCrypt hash, it is preserved without re-hashing.
+    /// </summary>
+    /// <param name="passwordOrHash">Plain text password or existing BCrypt hash.</param>
+    /// <returns>A secure BCrypt password hash string.</returns>
+    public static string ConvertToPasswordHash(string passwordOrHash)
+    {
+        if (string.IsNullOrWhiteSpace(passwordOrHash))
+        {
+            return string.Empty;
+        }
+
+        // Return unchanged if already a BCrypt hash
+        if (IsBCryptHash(passwordOrHash))
+        {
+            return passwordOrHash;
+        }
+
+        return PasswordHelper.HashPassword(passwordOrHash);
+    }
+
+    /// <summary>
+    /// Determines whether the given string conforms to standard BCrypt hash format.
+    /// </summary>
+    /// <param name="value">String value to test.</param>
+    /// <returns><c>true</c> if the string is already a BCrypt hash; otherwise, <c>false</c>.</returns>
+    private static bool IsBCryptHash(string value)
+    {
+        return value.Length == 60 &&
+               (value.StartsWith("$2a$") || value.StartsWith("$2b$") || value.StartsWith("$2y$") || value.StartsWith("$2x$"));
+    }
+}

@@ -22,29 +22,6 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
           <p class="text-xs sm:text-sm text-gx-text-secondary leading-relaxed">Access your customer repair tracking or workshop management console.</p>
         </div>
 
-        <!-- Quick 1-Click Demo Login Bar -->
-        <div class="bg-[#0e0d0d] border border-[#222222] p-3.5 mb-6">
-          <div class="text-[0.6875rem] font-bold text-gx-primary uppercase tracking-widest text-center mb-2.5 font-display">QUICK DEMO ONE-CLICK ACCESS</div>
-          <div class="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              class="px-3 py-2.5 bg-[#141314] border border-[#292929] hover:border-emerald-500 hover:text-emerald-400 text-xs font-display font-bold uppercase tracking-wider text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
-              (click)="authService.quickCustomerLogin()"
-            >
-              <app-icon name="user" [size]="14" strokeColor="#34d399" />
-              <span>Customer Demo</span>
-            </button>
-            <button
-              type="button"
-              class="px-3 py-2.5 bg-[#141314] border border-[#292929] hover:border-gx-primary hover:text-gx-primary text-xs font-display font-bold uppercase tracking-wider text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
-              (click)="authService.quickAdminLogin()"
-            >
-              <app-icon name="shield" [size]="14" strokeColor="#d70006" />
-              <span>Admin Demo</span>
-            </button>
-          </div>
-        </div>
-
         <!-- Main Login Form -->
         <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-4">
           @if (errorMessage()) {
@@ -136,7 +113,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
   `
 })
 export class LoginComponent {
-  authService = inject(AuthService);
+  private authService = inject(AuthService);
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private route = inject(ActivatedRoute);

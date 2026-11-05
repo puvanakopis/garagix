@@ -1,71 +1,73 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
-import { tap, catchError, shareReplay } from 'rxjs/operators';
-import { User, UserRole, AuthResponse, ForgotPasswordResponse } from '../models/user.model';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
+import {
+  User,
+  UserRole,
+  LoginRequest,
+  RegisterRequest,
+  SendRegistrationOtpRequest,
+  VerifyRegistrationOtpRequest,
+  RegistrationOtpResponse,
+  ForgotPasswordRequest,
+  VerifyOtpRequest,
+  ResetPasswordRequest,
+  AuthResponse,
+  ForgotPasswordResponse,
+  VerifyOtpResponse,
+  ResetPasswordResponse
+} from '../models/auth.model';
 import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private http = inject(HttpClient);
-  private router = inject(Router);
-  private toastService = inject(ToastService);
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
-  private readonly API_URL = 'http://localhost:5203/api/auth';
-  private readonly STORAGE_USER_KEY = 'garagix_auth_user';
-  private readonly STORAGE_TOKEN_KEY = 'garagix_auth_token';
+  private readonly API_URL = `${environment.apiUrl}/auth`;
+  private readonly STORAGE_USER_KEY = environment.userKey;
+  private readonly STORAGE_TOKEN_KEY = environment.tokenKey;
 
-  readonly defaultCustomer: User = {
-    id: 'cust-101',
-    name: 'Kasun Mendis',
-    email: 'kasun.mendis@example.lk',
-    phone: '+94 77 123 4567',
-    address: 'No. 42/B, Flower Road, Colombo 07, Sri Lanka',
-    role: 'customer',
-    createdAt: '2024-03-01T00:00:00Z',
-    totalBookings: 4,
-    status: 'active'
-  };
+  // Reactive state using Angular Signals
+  private readonly _currentUser = signal<User | null>(this.getInitialUser());
+  readonly currentUser = this._currentUser.asReadonly();
 
-  readonly defaultAdmin: User = {
-    id: 'admin-001',
-    name: 'Priyantha Jayasuriya',
-    email: 'admin@garagix.lk',
-    phone: '+94 11 234 5678',
-    address: 'Garagix Workshop HQ, Nawala Road, Colombo',
-    role: 'admin',
-    createdAt: '2022-01-15T00:00:00Z',
-    totalBookings: 0,
-    status: 'active'
-  };
+  private readonly _token = signal<string | null>(this.getInitialToken());
+  readonly token = this._token.asReadonly();
 
-  private _currentUser = signal<User | null>(this.getInitialUser());
-  currentUser = this._currentUser.asReadonly();
+  readonly isAuthenticated = computed<boolean>(() => this._currentUser() !== null);
+  readonly userRole = computed<UserRole>(() => this._currentUser()?.role ?? 'customer');
+  readonly isAdmin = computed<boolean>(() => this._currentUser()?.role === 'admin');
+  readonly isCustomer = computed<boolean>(() => this._currentUser()?.role === 'customer');
 
-  private _token = signal<string | null>(this.getInitialToken());
-  token = this._token.asReadonly();
-
-  isAuthenticated = computed(() => this._currentUser() !== null);
-  userRole = computed<UserRole>(() => this._currentUser()?.role ?? 'customer');
-  isAdmin = computed(() => this._currentUser()?.role === 'admin');
-  isCustomer = computed(() => this._currentUser()?.role === 'customer');
-
+  /**
+   * Reads persistent user from localStorage upon initial app load.
+   * Returns null if unauthenticated so guests are strictly protected by route guards.
+   */
   private getInitialUser(): User | null {
+    if (typeof window === 'undefined') return null;
     try {
       const stored = localStorage.getItem(this.STORAGE_USER_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        return JSON.parse(stored) as User;
       }
     } catch {
-      // fallback
+      // Fall through to null on parse failure
     }
-    return this.defaultCustomer;
+    return null;
   }
 
+  /**
+   * Reads stored JWT token from localStorage.
+   */
   private getInitialToken(): string | null {
+    if (typeof window === 'undefined') return null;
     try {
       return localStorage.getItem(this.STORAGE_TOKEN_KEY);
     } catch {
@@ -73,190 +75,181 @@ export class AuthService {
     }
   }
 
-  private setSession(user: User, token: string): void {
+  /**
+   * Persists active user session and updates signals.
+   */
+  setSession(user: User, token: string): void {
     this._currentUser.set(user);
     this._token.set(token);
-    try {
-      localStorage.setItem(this.STORAGE_USER_KEY, JSON.stringify(user));
-      localStorage.setItem(this.STORAGE_TOKEN_KEY, token);
-    } catch {}
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(this.STORAGE_USER_KEY, JSON.stringify(user));
+        localStorage.setItem(this.STORAGE_TOKEN_KEY, token);
+      } catch {
+        // Handle storage quota or privacy mode errors
+      }
+    }
   }
 
+  /**
+   * Clears stored credentials and resets signals.
+   */
+  clearSession(): void {
+    this._currentUser.set(null);
+    this._token.set(null);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(this.STORAGE_USER_KEY);
+        localStorage.removeItem(this.STORAGE_TOKEN_KEY);
+      } catch {
+        // Handle storage errors
+      }
+    }
+  }
+
+  /**
+   * Gets current JWT token synchronously.
+   */
   getToken(): string | null {
     return this._token();
   }
 
-  private getAuthHeaders(): HttpHeaders {
-    const token = this.getToken();
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    });
-  }
-
   /**
-   * Authenticate user with .NET backend API
+   * Authenticate user with backend API.
    */
-  login(email: string, pass: string, role: UserRole = 'customer', rememberMe = false): Observable<AuthResponse> {
-    const obs$ = this.http.post<AuthResponse>(`${this.API_URL}/login`, {
-      email,
-      password: pass,
-      rememberMe,
-      role
-    }).pipe(
+  login(
+    credentialsOrEmail: LoginRequest | string,
+    pass?: string,
+    role: UserRole = 'customer',
+    rememberMe = false
+  ): Observable<AuthResponse> {
+    const payload: LoginRequest = typeof credentialsOrEmail === 'string'
+      ? { email: credentialsOrEmail, password: pass ?? '', role, rememberMe }
+      : credentialsOrEmail;
+
+    return this.http.post<AuthResponse>(`${this.API_URL}/login`, payload).pipe(
       tap(res => {
         if (res.user && res.token) {
           this.setSession(res.user, res.token);
           this.toastService.showSuccess(`Welcome back, ${res.user.name}!`, 'Signed In');
-        }
-      }),
-      catchError(err => {
-        // If backend is unreachable, gracefully fall back to local demo login
-        if (err.status === 0) {
-          const user: User = (role === 'admin' || email.toLowerCase().includes('admin'))
-            ? { ...this.defaultAdmin, email }
-            : { ...this.defaultCustomer, email, name: email.split('@')[0] || 'Valued Customer' };
-
-          this.setSession(user, 'offline-demo-token');
-          this.toastService.showSuccess(`Welcome back, ${user.name}! (Offline Demo Mode)`, 'Signed In');
-          return of({
-            success: true,
-            message: 'Signed in via offline demo fallback.',
-            token: 'offline-demo-token',
-            user
-          });
-        }
-        return throwError(() => err);
-      }),
-      shareReplay(1)
-    );
-
-    // Auto-subscribe in case existing synchronous callers do not subscribe
-    obs$.subscribe({ error: () => {} });
-    return obs$;
-  }
-
-  /**
-   * Register new customer account with .NET backend API
-   */
-  register(fullName: string, email: string, phone: string, password = 'Password@123'): Observable<AuthResponse> {
-    const obs$ = this.http.post<AuthResponse>(`${this.API_URL}/register`, {
-      fullName,
-      email,
-      phone,
-      password,
-      confirmPassword: password,
-      role: 'customer'
-    }).pipe(
-      tap(res => {
-        if (res.user && res.token) {
-          this.setSession(res.user, res.token);
-          this.toastService.showSuccess(`Account registered successfully. Welcome, ${fullName}!`);
-        }
-      }),
-      catchError(err => {
-        // Offline demo fallback if backend is unreachable
-        if (err.status === 0) {
-          const newUser: User = {
-            id: 'cust-' + Math.floor(100 + Math.random() * 900),
-            name: fullName,
-            email,
-            phone,
-            role: 'customer',
-            createdAt: new Date().toISOString(),
-            totalBookings: 0,
-            status: 'active'
-          };
-          this.setSession(newUser, 'offline-demo-token');
-          this.toastService.showSuccess(`Account registered successfully. Welcome, ${fullName}! (Offline Mode)`);
-          return of({
-            success: true,
-            message: 'Registered in offline demo mode.',
-            token: 'offline-demo-token',
-            user: newUser
-          });
-        }
-        return throwError(() => err);
-      }),
-      shareReplay(1)
-    );
-
-    obs$.subscribe({ error: () => {} });
-    return obs$;
-  }
-
-  /**
-   * Step 1: Request 6-digit OTP code for password recovery
-   */
-  forgotPassword(email: string): Observable<ForgotPasswordResponse> {
-    return this.http.post<ForgotPasswordResponse>(`${this.API_URL}/forgot-password`, { email });
-  }
-
-  /**
-   * Step 2: Validate 6-digit OTP code
-   */
-  verifyOtp(email: string, otp: string): Observable<{ success: boolean; message: string }> {
-    return this.http.post<{ success: boolean; message: string }>(`${this.API_URL}/verify-otp`, { email, otp });
-  }
-
-  /**
-   * Step 3: Complete password reset with new password
-   */
-  resetPassword(email: string, otp: string, newPassword: string): Observable<{ success: boolean; message: string }> {
-    return this.http.post<{ success: boolean; message: string }>(`${this.API_URL}/reset-password`, {
-      email,
-      otp,
-      newPassword,
-      confirmPassword: newPassword
-    });
-  }
-
-  /**
-   * Retrieve current user profile with JWT
-   */
-  getProfile(): Observable<User> {
-    return this.http.get<User>(`${this.API_URL}/me`, { headers: this.getAuthHeaders() }).pipe(
-      tap(user => {
-        if (user) {
-          this._currentUser.set(user);
-          localStorage.setItem(this.STORAGE_USER_KEY, JSON.stringify(user));
         }
       })
     );
   }
 
   /**
-   * Quick 1-Click Customer Demo Login
+   * Register a new customer account with backend API.
    */
-  quickCustomerLogin(): void {
-    this.login('kasun.mendis@example.lk', 'Customer@123', 'customer').subscribe({
-      next: () => {
-        this.toastService.showSuccess('Logged in as Customer (Demo)', 'Portal Access Granted');
-        this.router.navigate(['/customer/dashboard']);
-      },
-      error: () => {
-        this.setSession(this.defaultCustomer, 'mock-jwt-customer-token');
-        this.toastService.showSuccess('Logged in as Customer (Offline Mode)', 'Portal Access Granted');
-        this.router.navigate(['/customer/dashboard']);
-      }
-    });
+  register(
+    requestOrFullName: RegisterRequest | string,
+    email?: string,
+    phone?: string,
+    password = 'Password@123'
+  ): Observable<AuthResponse> {
+    const payload: RegisterRequest = typeof requestOrFullName === 'string'
+      ? {
+          fullName: requestOrFullName,
+          email: email ?? '',
+          phone: phone ?? '',
+          password,
+          confirmPassword: password,
+          role: 'customer'
+        }
+      : {
+          ...requestOrFullName,
+          confirmPassword: requestOrFullName.confirmPassword ?? requestOrFullName.password,
+          role: requestOrFullName.role ?? 'customer'
+        };
+
+    return this.http.post<AuthResponse>(`${this.API_URL}/register`, payload).pipe(
+      tap(res => {
+        if (res.user && res.token) {
+          this.setSession(res.user, res.token);
+          this.toastService.showSuccess(`Account registered successfully. Welcome, ${payload.fullName}!`);
+        }
+      })
+    );
   }
 
   /**
-   * Quick 1-Click Admin Demo Login
+   * Step 1 of registration: Request 6-digit email OTP for new user registration
    */
-  quickAdminLogin(): void {
-    this.login('admin@garagix.lk', 'Admin@123', 'admin').subscribe({
-      next: () => {
-        this.toastService.showSuccess('Logged in as Workshop Administrator (Demo)', 'Admin Access Granted');
-        this.router.navigate(['/admin/dashboard']);
-      },
-      error: () => {
-        this.setSession(this.defaultAdmin, 'mock-jwt-admin-token');
-        this.toastService.showSuccess('Logged in as Admin (Offline Mode)', 'Admin Access Granted');
-        this.router.navigate(['/admin/dashboard']);
-      }
-    });
+  sendRegistrationOtp(request: SendRegistrationOtpRequest): Observable<RegistrationOtpResponse> {
+    return this.http.post<RegistrationOtpResponse>(`${this.API_URL}/register/send-otp`, request);
+  }
+
+  /**
+   * Step 2 of registration: Verify OTP and create account
+   */
+  verifyRegistrationOtp(request: VerifyRegistrationOtpRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.API_URL}/register/verify-otp`, request).pipe(
+      tap(res => {
+        if (res.user && res.token) {
+          this.setSession(res.user, res.token);
+          this.toastService.showSuccess(`Account registered successfully. Welcome, ${res.user.name}!`);
+        }
+      })
+    );
+  }
+
+  /**
+   * Step 1: Request 6-digit OTP code for password recovery
+   */
+  forgotPassword(emailOrRequest: string | ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
+    const payload: ForgotPasswordRequest = typeof emailOrRequest === 'string'
+      ? { email: emailOrRequest }
+      : emailOrRequest;
+
+    return this.http.post<ForgotPasswordResponse>(`${this.API_URL}/forgot-password`, payload);
+  }
+
+  /**
+   * Step 2: Validate 6-digit OTP code
+   */
+  verifyOtp(emailOrRequest: string | VerifyOtpRequest, otp?: string): Observable<VerifyOtpResponse> {
+    const payload: VerifyOtpRequest = typeof emailOrRequest === 'string'
+      ? { email: emailOrRequest, otp: otp ?? '' }
+      : emailOrRequest;
+
+    return this.http.post<VerifyOtpResponse>(`${this.API_URL}/verify-otp`, payload);
+  }
+
+  /**
+   * Step 3: Complete password reset with new password
+   */
+  resetPassword(
+    requestOrEmail: ResetPasswordRequest | string,
+    otp?: string,
+    newPassword?: string
+  ): Observable<ResetPasswordResponse> {
+    const payload: ResetPasswordRequest = typeof requestOrEmail === 'string'
+      ? {
+          email: requestOrEmail,
+          otp: otp ?? '',
+          newPassword: newPassword ?? '',
+          confirmPassword: newPassword ?? ''
+        }
+      : requestOrEmail;
+
+    return this.http.post<ResetPasswordResponse>(`${this.API_URL}/reset-password`, payload);
+  }
+
+  /**
+   * Retrieve current user profile with JWT (token attached automatically by authInterceptor)
+   */
+  getProfile(): Observable<User> {
+    return this.http.get<User>(`${this.API_URL}/me`).pipe(
+      tap(user => {
+        if (user) {
+          this._currentUser.set(user);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(this.STORAGE_USER_KEY, JSON.stringify(user));
+            } catch {}
+          }
+        }
+      })
+    );
   }
 
   /**
@@ -267,9 +260,11 @@ export class AuthService {
     if (current) {
       const merged = { ...current, ...updated };
       this._currentUser.set(merged);
-      try {
-        localStorage.setItem(this.STORAGE_USER_KEY, JSON.stringify(merged));
-      } catch {}
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(this.STORAGE_USER_KEY, JSON.stringify(merged));
+        } catch {}
+      }
       this.toastService.showSuccess('Profile updated successfully!');
     }
   }
@@ -278,12 +273,7 @@ export class AuthService {
    * Sign out and clear stored session
    */
   logout(): void {
-    this._currentUser.set(null);
-    this._token.set(null);
-    try {
-      localStorage.removeItem(this.STORAGE_USER_KEY);
-      localStorage.removeItem(this.STORAGE_TOKEN_KEY);
-    } catch {}
+    this.clearSession();
     this.toastService.showInfo('You have been logged out.');
     this.router.navigate(['/auth/login']);
   }

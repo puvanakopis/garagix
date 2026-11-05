@@ -32,16 +32,6 @@ export class ServiceCatalogService {
         'Subtle rattling sounds over uneven road surfaces',
         'Planning long-distance travel across provinces'
       ],
-      faqs: [
-        {
-          question: 'How often should general maintenance be carried out?',
-          answer: 'We recommend scheduled maintenance every 5,000 km or 6 months, whichever comes first, especially in Sri Lanka due to stop-and-go traffic and tropical humidity.'
-        },
-        {
-          question: 'Will genuine OEM parts be used if replacements are required?',
-          answer: 'Yes, we only source certified OEM or high-grade aftermarket components with full warranty backing.'
-        }
-      ],
       recommendedMechanicIds: ['mech-1', 'mech-2']
     },
     {
@@ -71,12 +61,6 @@ export class ServiceCatalogService {
         'Loss of power during highway acceleration or uphill climbs',
         'Engine overheating or frequent coolant loss'
       ],
-      faqs: [
-        {
-          question: 'What warranties do you provide on engine rebuilds?',
-          answer: 'We provide a comprehensive 12-month or 20,000 km workshop warranty on all internal engine repairs.'
-        }
-      ],
       recommendedMechanicIds: ['mech-1']
     },
     {
@@ -104,12 +88,6 @@ export class ServiceCatalogService {
         'Vibration felt through steering wheel while stopping',
         'Vehicle pulls noticeably to one side under braking'
       ],
-      faqs: [
-        {
-          question: 'Do you skim disc rotors on the car or on a bench lathe?',
-          answer: 'We use precision Pro-Cut on-car computerized rotor matching to eliminate microscopic runout and brake pedal judder.'
-        }
-      ],
       recommendedMechanicIds: ['mech-3']
     },
     {
@@ -134,12 +112,6 @@ export class ServiceCatalogService {
         'Engine oil change indicator light on dashboard',
         'Dark, grimy oil on dipstick inspection',
         'Engine runs louder with increased valve chatter'
-      ],
-      faqs: [
-        {
-          question: 'What oil brands do you stock?',
-          answer: 'We officially stock Mobil 1, Motul, Castrol Edge, and Toyota Genuine Motor Oils.'
-        }
       ],
       recommendedMechanicIds: ['mech-2']
     },
@@ -168,12 +140,6 @@ export class ServiceCatalogService {
         'Hissing noise when AC button is pressed',
         'Water pooling on front passenger floorboard'
       ],
-      faqs: [
-        {
-          question: 'How long does an AC gas recharge take?',
-          answer: 'A standard recovery, vacuum leak test, and recharge takes approximately 45 to 60 minutes.'
-        }
-      ],
       recommendedMechanicIds: ['mech-6']
     },
     {
@@ -199,12 +165,6 @@ export class ServiceCatalogService {
         'Steering vibration at 70 - 100 km/h highway speeds',
         'Tread depth worn below legal limit (1.6mm)',
         'Cracking, sidewall bulging, or puncture damage'
-      ],
-      faqs: [
-        {
-          question: 'Do you offer tire rotation with balancing?',
-          answer: 'Yes, a 4-wheel rotation is included free of charge with full-set balancing.'
-        }
       ],
       recommendedMechanicIds: ['mech-4']
     },
@@ -233,12 +193,6 @@ export class ServiceCatalogService {
         'Engine running continuously without switching to EV mode',
         'Car fails to start after parked overnight'
       ],
-      faqs: [
-        {
-          question: 'Can you recondition individual weak hybrid battery cells?',
-          answer: 'Yes, our laboratory is equipped with precision computerized cell balancers to recondition or replace degraded cell modules.'
-        }
-      ],
       recommendedMechanicIds: ['mech-5']
     },
     {
@@ -264,12 +218,6 @@ export class ServiceCatalogService {
         'Steering wheel off-center when driving straight',
         'Uneven inner or outer tire edge wear',
         'Car wandering or pulling left/right on flat expressway'
-      ],
-      faqs: [
-        {
-          question: 'How long does a 3D wheel alignment take?',
-          answer: 'Typically 45 minutes on our automated alignment bay.'
-        }
       ],
       recommendedMechanicIds: ['mech-4']
     },
@@ -297,12 +245,6 @@ export class ServiceCatalogService {
         'Prospective buyer evaluating a private or dealership vehicle',
         'Vehicle warranty expiration check',
         'Selling your car and wishing to provide verified condition proof'
-      ],
-      faqs: [
-        {
-          question: 'Do I receive a written report on the same day?',
-          answer: 'Yes, our digital PDF report with high-resolution photos is emailed to you within 2 hours of inspection.'
-        }
       ],
       recommendedMechanicIds: ['mech-1', 'mech-2']
     }

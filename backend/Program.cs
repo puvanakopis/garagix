@@ -27,19 +27,20 @@ var app = builder.Build();
 // 2. Ensure MySQL Database is initialized on Startup
 using (var scope = app.Services.CreateScope())
 {
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        db.Database.EnsureCreated();
+        await DbInitializer.InitializeAsync(db, logger);
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning(ex, "Could not connect to MySQL to run EnsureCreated. Please check your MySQL credentials in appsettings.json.");
+        logger.LogWarning(ex, "Could not initialize MySQL database schema on startup. Please check connection credentials.");
     }
 }
 
 // 3. HTTP Request Pipeline & Middleware
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())

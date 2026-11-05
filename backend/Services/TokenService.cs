@@ -7,17 +7,22 @@ using Garagix.Api.Services.Interfaces;
 
 namespace Garagix.Api.Services;
 
-public class TokenService : ITokenService
+/// <summary>
+/// Service responsible for issuing signed JSON Web Tokens (JWT) for authenticated users.
+/// </summary>
+/// <remarks>
+/// Initializes a new instance of the <see cref="TokenService"/> class using C# 12 primary constructor syntax.
+/// </remarks>
+/// <param name="configuration">Application configuration for retrieving JWT settings.</param>
+public class TokenService(IConfiguration configuration) : ITokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly IConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-    public TokenService(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-
+    /// <inheritdoc />
     public (string Token, DateTime ExpiresAt) GenerateToken(User user, bool rememberMe = false)
     {
+        ArgumentNullException.ThrowIfNull(user);
+
         var keyString = Environment.GetEnvironmentVariable("JWT_SECRET")
             ?? Environment.GetEnvironmentVariable("JWT_KEY")
             ?? _configuration["Jwt:Key"] 

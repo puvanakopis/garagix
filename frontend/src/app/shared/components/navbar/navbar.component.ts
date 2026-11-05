@@ -36,10 +36,15 @@ import { IconComponent } from '../icon/icon.component';
 
         <!-- Right Action Items -->
         <div class="flex items-center gap-4">
-          <!-- Signature Red CTA Button ("LOGIN") -->
-          <a routerLink="/auth/login" class="inline-flex items-center justify-center bg-[#d70006] hover:bg-transparent text-white border border-[#d70006] hover:border-white px-6 py-2.5 font-oxanium text-sm font-bold uppercase tracking-wider transition-all duration-300">
-            <span>LOGIN</span>
-          </a>
+          @if (authService.isAuthenticated()) {
+            <a [routerLink]="authService.isAdmin() ? '/admin/dashboard' : '/customer/dashboard'" class="inline-flex items-center justify-center bg-[#d70006] hover:bg-transparent text-white border border-[#d70006] hover:border-white px-5 py-2.5 font-oxanium text-sm font-bold uppercase tracking-wider transition-all duration-300">
+              <span>PORTAL</span>
+            </a>
+          } @else {
+            <a routerLink="/auth/login" class="inline-flex items-center justify-center bg-[#d70006] hover:bg-transparent text-white border border-[#d70006] hover:border-white px-6 py-2.5 font-oxanium text-sm font-bold uppercase tracking-wider transition-all duration-300">
+              <span>LOGIN</span>
+            </a>
+          }
 
           <!-- Mobile Menu Hamburger Button -->
           <button

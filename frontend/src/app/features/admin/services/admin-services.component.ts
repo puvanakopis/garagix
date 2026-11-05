@@ -492,61 +492,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                 }
               </div>
 
-              <!-- 7. Frequently Asked Inquiries (FAQs) -->
-              <div class="space-y-3">
-                <div class="flex items-center justify-between pb-1 border-b border-[#222222]">
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-400 font-oxanium">
-                    7. Frequently Asked Inquiries (FAQs)
-                  </h4>
-                  <span class="text-[10px] font-bold font-oxanium px-2 py-0.5 rounded bg-[#1c1b1c] border border-[#262526] text-white">
-                    {{ faqs().length }} FAQS
-                  </span>
-                </div>
-                <div class="p-3 bg-[#181718] border border-[#262526] rounded-xl space-y-2">
-                  <input
-                    type="text"
-                    [value]="newFaqQuestion()"
-                    (input)="newFaqQuestion.set($any($event.target).value)"
-                    placeholder="Question: e.g. Do you use genuine certified replacement parts?"
-                    class="w-full bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-lg px-3 py-2 text-white text-xs outline-none transition-colors"
-                  />
-                  <textarea
-                    rows="2"
-                    [value]="newFaqAnswer()"
-                    (input)="newFaqAnswer.set($any($event.target).value)"
-                    placeholder="Answer: e.g. Yes, we exclusively source certified OEM parts with manufacturer warranty..."
-                    class="w-full bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-lg px-3 py-2 text-white text-xs outline-none transition-colors"
-                  ></textarea>
-                  <button
-                    type="button"
-                    (click)="addFaq()"
-                    class="w-full py-2 bg-[#252425] hover:bg-[#d70006] hover:text-white text-neutral-200 rounded-lg text-xs font-bold uppercase tracking-wider font-oxanium transition-colors cursor-pointer"
-                  >
-                    + Add FAQ Pair
-                  </button>
-                </div>
-                @if (faqs().length > 0) {
-                  <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    @for (faq of faqs(); track $index) {
-                      <div class="p-3 rounded-lg bg-[#1c1b1c] border border-[#262526] relative group">
-                        <div class="flex items-start justify-between gap-2">
-                          <p class="text-xs font-bold text-white mb-0.5">{{ faq.question }}</p>
-                          <button
-                            type="button"
-                            (click)="removeFaq($index)"
-                            class="text-neutral-400 hover:text-red-400 p-0.5 cursor-pointer transition-colors shrink-0"
-                            title="Remove FAQ"
-                          >
-                            <app-icon name="trash" [size]="13" />
-                          </button>
-                        </div>
-                        <p class="text-[11px] text-neutral-400 leading-relaxed">{{ faq.answer }}</p>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-
               <!-- Form Actions -->
               <div class="flex items-center justify-end gap-3 pt-4 border-t border-[#222222]">
                 <button
@@ -655,21 +600,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                   </div>
                 </div>
               }
-
-              <!-- FAQs -->
-              @if (srv.faqs && srv.faqs.length > 0) {
-                <div>
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-400 font-oxanium mb-2">Frequently Asked Inquiries</h4>
-                  <div class="space-y-2">
-                    @for (faq of srv.faqs; track faq.question) {
-                      <div class="p-3 rounded-lg bg-[#1c1b1c] border border-[#262526]">
-                        <p class="text-xs font-bold text-white mb-1">{{ faq.question }}</p>
-                        <p class="text-[11px] text-neutral-400 leading-relaxed">{{ faq.answer }}</p>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
             </div>
 
             <!-- Modal Footer -->
@@ -728,12 +658,9 @@ export class AdminServicesComponent {
 
   includedItems = signal<string[]>([]);
   commonSymptoms = signal<string[]>([]);
-  faqs = signal<{ question: string; answer: string }[]>([]);
 
   newIncludedItem = signal<string>('');
   newSymptom = signal<string>('');
-  newFaqQuestion = signal<string>('');
-  newFaqAnswer = signal<string>('');
 
   activeCount = computed(() => this.allServices().filter(s => s.isActive).length);
   avgStartingRate = computed(() => {
@@ -807,22 +734,6 @@ export class AdminServicesComponent {
     this.commonSymptoms.update(list => list.filter((_, i) => i !== idx));
   }
 
-  addFaq(): void {
-    const q = this.newFaqQuestion().trim();
-    const a = this.newFaqAnswer().trim();
-    if (!q || !a) {
-      this.toast.showError('Please provide both question and answer for the FAQ.');
-      return;
-    }
-    this.faqs.update(list => [...list, { question: q, answer: a }]);
-    this.newFaqQuestion.set('');
-    this.newFaqAnswer.set('');
-  }
-
-  removeFaq(idx: number): void {
-    this.faqs.update(list => list.filter((_, i) => i !== idx));
-  }
-
   openViewModal(s: CarService): void {
     this.viewingService.set(s);
   }
@@ -855,16 +766,8 @@ export class AdminServicesComponent {
       'Approaching scheduled service mileage interval',
       'Dashboard check engine or service notification'
     ]);
-    this.faqs.set([
-      {
-        question: 'How long does this service package typically take?',
-        answer: 'Standard turnaround is 1 to 2 hours within our dedicated hydraulic workshop bays.'
-      }
-    ]);
     this.newIncludedItem.set('');
     this.newSymptom.set('');
-    this.newFaqQuestion.set('');
-    this.newFaqAnswer.set('');
     this.showFormModal.set(true);
   }
 
@@ -885,11 +788,8 @@ export class AdminServicesComponent {
     });
     this.includedItems.set(s.includedItems ? [...s.includedItems] : []);
     this.commonSymptoms.set(s.commonSymptoms ? [...s.commonSymptoms] : []);
-    this.faqs.set(s.faqs ? s.faqs.map(f => ({ ...f })) : []);
     this.newIncludedItem.set('');
     this.newSymptom.set('');
-    this.newFaqQuestion.set('');
-    this.newFaqAnswer.set('');
     this.showFormModal.set(true);
   }
 
@@ -943,8 +843,7 @@ export class AdminServicesComponent {
       featured: Boolean(val.featured),
       isActive: Boolean(val.isActive),
       includedItems: this.includedItems(),
-      commonSymptoms: this.commonSymptoms(),
-      faqs: this.faqs()
+      commonSymptoms: this.commonSymptoms()
     };
 
     const id = this.editingServiceId();

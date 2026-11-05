@@ -12,23 +12,5 @@ export interface User {
   status: 'active' | 'inactive';
 }
 
-export interface AuthState {
-  isAuthenticated: boolean;
-  currentUser: User | null;
-  token: string | null;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  message: string;
-  token: string;
-  expiresAt?: string;
-  user?: User;
-}
-
-export interface ForgotPasswordResponse {
-  success: boolean;
-  message: string;
-  otp?: string;
-  expiresInMinutes?: number;
-}
+// Re-export auth types for convenience and backwards compatibility
+export * from './auth.model';

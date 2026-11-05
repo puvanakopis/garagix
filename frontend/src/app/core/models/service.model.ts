@@ -21,7 +21,6 @@ export interface CarService {
   isActive: boolean;
   includedItems: string[];
   commonSymptoms: string[];
-  faqs: { question: string; answer: string }[];
   recommendedMechanicIds?: string[];
 }
 

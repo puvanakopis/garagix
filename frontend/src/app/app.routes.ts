@@ -42,18 +42,10 @@ export const routes: Routes = [
         path: 'privacy',
         loadComponent: () => import('./features/public/privacy/privacy.component').then(m => m.PrivacyComponent)
       },
-      // Auth routes inside public layout
+      // Auth feature routes lazy loaded
       {
-        path: 'auth/login',
-        loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
-      },
-      {
-        path: 'auth/register',
-        loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
-      },
-      {
-        path: 'auth/forgot-password',
-        loadComponent: () => import('./features/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
+        path: 'auth',
+        loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES)
       }
     ]
   },

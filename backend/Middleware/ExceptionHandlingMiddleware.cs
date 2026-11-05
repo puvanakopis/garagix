@@ -3,17 +3,23 @@ using System.Text.Json;
 
 namespace Garagix.Api.Middleware;
 
-public class ExceptionHandlingMiddleware
+/// <summary>
+/// Global exception handling middleware that catches unhandled errors and normalizes them into structured JSON responses.
+/// </summary>
+/// <remarks>
+/// Initializes a new instance of the <see cref="ExceptionHandlingMiddleware"/> class.
+/// </remarks>
+/// <param name="next">The next middleware delegate.</param>
+/// <param name="logger">Logger for capturing unexpected server faults.</param>
+public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+    private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
+    private readonly ILogger<ExceptionHandlingMiddleware> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
+    /// <summary>
+    /// Invokes the exception handling pipeline.
+    /// </summary>
+    /// <param name="context">Active HTTP context.</param>
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -28,8 +34,6 @@ public class ExceptionHandlingMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        _logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
-
         var statusCode = exception switch
         {
             BadHttpRequestException => (int)HttpStatusCode.BadRequest,
@@ -38,11 +42,17 @@ public class ExceptionHandlingMiddleware
             _ => (int)HttpStatusCode.InternalServerError
         };
 
+        // Only log stack traces for actual unexpected 500 server errors
+        if (statusCode >= 500)
+        {
+            _logger.LogError(exception, "Internal server error: {Message}", exception.Message);
+        }
+
         var response = new
         {
             success = false,
             message = exception.Message,
-            statusCode = statusCode
+            statusCode
         };
 
         context.Response.ContentType = "application/json";
@@ -56,4 +66,3 @@ public class ExceptionHandlingMiddleware
         await context.Response.WriteAsync(json);
     }
 }
-

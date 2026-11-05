@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { ToastService } from '../../../core/services/toast.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-contact',
@@ -46,7 +47,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="text-xs font-bold text-gx-primary uppercase tracking-widest mb-1 font-display">Hub Address</div>
                 <h3 class="font-display text-xl font-bold text-white mb-2">Central Engineering Hub</h3>
                 <p class="text-xs sm:text-sm text-gx-text-secondary leading-relaxed">
-                  No. 45/A, Nawala Road, Nugegoda, Colombo, Sri Lanka
+                  {{ env.workshopAddress }}
                 </p>
               </div>
               <div class="mt-6 pt-4 border-t border-[#222222] flex items-center justify-between text-xs text-gx-text-muted">
@@ -68,7 +69,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="text-xs font-bold text-gx-primary uppercase tracking-widest mb-1 font-display">Direct Lines</div>
                 <h3 class="font-display text-xl font-bold text-white mb-2">Telephone Inquiries</h3>
                 <p class="text-xs sm:text-sm text-gx-text-secondary leading-relaxed">
-                  General: <a href="tel:+94112345678" class="text-white hover:text-gx-primary transition-colors font-medium">(+94) 11 234 5678</a><br>
+                  General: <a [href]="'tel:' + env.supportPhone" class="text-white hover:text-gx-primary transition-colors font-medium">{{ env.supportPhone }}</a><br>
                   24/7 Hotline: <a href="tel:+94771234567" class="text-white hover:text-gx-primary transition-colors font-medium">(+94) 77 123 4567</a>
                 </p>
               </div>
@@ -87,8 +88,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 <div class="text-xs font-bold text-gx-primary uppercase tracking-widest mb-1 font-display">Electronic Mail</div>
                 <h3 class="font-display text-xl font-bold text-white mb-2">Email Correspondence</h3>
                 <p class="text-xs sm:text-sm text-gx-text-secondary leading-relaxed">
-                  garage&#64;garagix.com<br>
-                  service&#64;garagix.lk
+                  <a [href]="'mailto:' + env.supportEmail" class="text-white hover:text-gx-primary transition-colors font-medium">{{ env.supportEmail }}</a>
                 </p>
               </div>
               <div class="mt-6 pt-4 border-t border-[#222222] flex items-center justify-between text-xs text-gx-text-muted">
@@ -314,6 +314,7 @@ import { ToastService } from '../../../core/services/toast.service';
   `
 })
 export class ContactComponent {
+  readonly env = environment;
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
 
