@@ -233,6 +233,13 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
                         <div class="text-[11px] text-neutral-400 mt-1">{{ veh.type }} &bull; {{ veh.mileageKm ? (veh.mileageKm | number) + ' km' : 'Mileage unrecorded' }}</div>
                       </div>
                     </div>
+                  } @empty {
+                    <div class="p-6 text-center rounded-xl bg-[#1c1b1c] border border-[#262526] col-span-full">
+                      <p class="text-xs text-neutral-400">No vehicles registered in your garage profile yet.</p>
+                      <button type="button" class="mt-2 text-xs text-[#d70006] hover:underline font-semibold cursor-pointer" (click)="vehicleMode.set('new')">
+                        + Register a vehicle now
+                      </button>
+                    </div>
                   }
                 </div>
               } @else {
@@ -659,15 +666,15 @@ export class BookRepairComponent implements OnInit {
 
   // Step 1: Vehicle state
   vehicleMode = signal<'existing' | 'new'>('existing');
-  selectedVehicleId = signal<string>('veh-1');
+  selectedVehicleId = signal<string>('');
 
   newVehicleForm: FormGroup = this.fb.group({
     plateNumber: ['', Validators.required],
     brand: ['', Validators.required],
     model: ['', Validators.required],
-    year: [2020, Validators.required],
+    year: [new Date().getFullYear(), Validators.required],
     type: ['Sedan', Validators.required],
-    mileageKm: [45000]
+    mileageKm: [0]
   });
 
   // Step 2: Selected services
@@ -686,12 +693,15 @@ export class BookRepairComponent implements OnInit {
   selectedTime = signal<string>('09:30 AM');
   dropOffChoice = signal<'drop_off' | 'wait_at_lounge'>('drop_off');
 
-  contactName = signal<string>('Kasun Mendis');
-  contactPhone = signal<string>('+94 77 123 4567');
-  contactEmail = signal<string>('kasun.mendis@example.lk');
+  contactName = signal<string>('');
+  contactPhone = signal<string>('');
+  contactEmail = signal<string>('');
 
   // Master Data
-  savedVehicles = computed(() => this.customerService.getCustomerVehicles(this.authService.currentUser()?.id || 'cust-101'));
+  savedVehicles = computed(() => {
+    const u = this.authService.currentUser();
+    return u?.id ? this.customerService.getCustomerVehicles(u.id) : [];
+  });
   allServices = this.serviceCatalog.services;
   allMechanics = this.mechanicService.mechanics;
 
@@ -732,9 +742,24 @@ export class BookRepairComponent implements OnInit {
 
     const u = this.authService.currentUser();
     if (u) {
-      this.contactName.set(u.name);
-      this.contactPhone.set(u.phone);
-      this.contactEmail.set(u.email);
+      if (u.name) this.contactName.set(u.name);
+      if (u.phone) this.contactPhone.set(u.phone);
+      if (u.email) this.contactEmail.set(u.email);
+      if (u.id) {
+        this.customerService.loadCustomerVehicles(u.id).subscribe({
+          next: (vehs) => {
+            if (vehs && vehs.length > 0) {
+              if (!this.selectedVehicleId()) {
+                this.selectedVehicleId.set(vehs[0].id);
+              }
+            } else {
+              this.vehicleMode.set('new');
+            }
+          }
+        });
+      }
+    } else {
+      this.vehicleMode.set('new');
     }
   }
 
@@ -761,34 +786,34 @@ export class BookRepairComponent implements OnInit {
 
   vehiclePlateNumber = computed(() => {
     if (this.vehicleMode() === 'existing') {
-      const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId());
-      return v?.plateNumber || 'WP CAD-4821';
+      const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId()) || this.savedVehicles()[0];
+      return v?.plateNumber || '';
     }
-    return this.newVehicleForm.get('plateNumber')?.value || 'New Vehicle';
+    return this.newVehicleForm.get('plateNumber')?.value || '';
   });
 
   vehicleBrand = computed(() => {
     if (this.vehicleMode() === 'existing') {
-      const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId());
-      return v?.brand || 'Toyota';
+      const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId()) || this.savedVehicles()[0];
+      return v?.brand || '';
     }
     return this.newVehicleForm.get('brand')?.value || '';
   });
 
   vehicleModel = computed(() => {
     if (this.vehicleMode() === 'existing') {
-      const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId());
-      return v?.model || 'Prius';
+      const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId()) || this.savedVehicles()[0];
+      return v?.model || '';
     }
     return this.newVehicleForm.get('model')?.value || '';
   });
 
   vehicleYear = computed(() => {
     if (this.vehicleMode() === 'existing') {
-      const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId());
-      return v?.year || 2018;
+      const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId()) || this.savedVehicles()[0];
+      return v?.year || new Date().getFullYear();
     }
-    return this.newVehicleForm.get('year')?.value || 2020;
+    return this.newVehicleForm.get('year')?.value || new Date().getFullYear();
   });
 
   canProceedStep1(): boolean {
@@ -859,17 +884,18 @@ export class BookRepairComponent implements OnInit {
     setTimeout(() => {
       this.isSubmitting.set(false);
 
+      const u = this.authService.currentUser();
       const booking = this.bookingService.createBooking({
-        customerId: this.authService.currentUser()?.id || 'cust-101',
-        customerName: this.contactName(),
-        customerPhone: this.contactPhone(),
-        customerEmail: this.contactEmail(),
+        customerId: u?.id || '',
+        customerName: this.contactName() || u?.name || 'Customer',
+        customerPhone: this.contactPhone() || u?.phone || '',
+        customerEmail: this.contactEmail() || u?.email || '',
         vehicle: {
           plateNumber: this.vehiclePlateNumber(),
           brand: this.vehicleBrand(),
           model: this.vehicleModel(),
           year: this.vehicleYear(),
-          mileageKm: 55000
+          mileageKm: Number(this.newVehicleForm.get('mileageKm')?.value) || 0
         },
         serviceIds: this.selectedServiceIds(),
         serviceNames: this.selectedServices().map(s => s.name),
@@ -883,6 +909,19 @@ export class BookRepairComponent implements OnInit {
         dropOffOption: this.dropOffChoice(),
         estimatedPriceLkr: this.totalEstimatedPrice()
       });
+
+      if (this.vehicleMode() === 'new' && u?.id) {
+        const nv = this.newVehicleForm.value;
+        this.customerService.addVehicle({
+          customerId: u.id,
+          plateNumber: nv.plateNumber.toUpperCase(),
+          brand: nv.brand,
+          model: nv.model,
+          year: Number(nv.year),
+          type: nv.type,
+          mileageKm: Number(nv.mileageKm)
+        }).subscribe();
+      }
 
       this.confirmedBooking.set(booking);
       this.toast.showSuccess(`Booking ${booking.referenceNumber} generated successfully!`);

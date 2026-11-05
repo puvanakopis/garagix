@@ -1,3 +1,5 @@
+import { Vehicle } from './vehicle.model';
+
 export type UserRole = 'customer' | 'admin';
 
 export interface User {
@@ -10,6 +12,7 @@ export interface User {
   createdAt?: string;
   totalBookings?: number;
   status: 'active' | 'inactive';
+  vehicles?: Vehicle[];
 }
 
 // Re-export auth types for convenience and backwards compatibility

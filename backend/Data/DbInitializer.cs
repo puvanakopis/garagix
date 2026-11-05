@@ -123,6 +123,68 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
                 logger.LogInformation("Pre-seeded {Count} initial master technicians into database.", initialMechanics.Count);
             }
+
+            // Explicitly ensure the vehicles table exists
+            const string createVehiclesTableSql = """
+                CREATE TABLE IF NOT EXISTS `vehicles` (
+                    `Id` VARCHAR(50) NOT NULL PRIMARY KEY,
+                    `CustomerId` VARCHAR(50) NOT NULL,
+                    `PlateNumber` VARCHAR(30) NOT NULL,
+                    `Brand` VARCHAR(60) NOT NULL,
+                    `Model` VARCHAR(80) NOT NULL,
+                    `Year` INT NOT NULL,
+                    `Type` VARCHAR(40) NOT NULL DEFAULT 'Sedan',
+                    `MileageKm` INT NULL,
+                    `Vin` VARCHAR(50) NULL,
+                    `Color` VARCHAR(50) NULL,
+                    `CreatedAt` DATETIME(6) NOT NULL,
+                    `UpdatedAt` DATETIME(6) NULL,
+                    INDEX `IX_vehicles_CustomerId` (`CustomerId`),
+                    INDEX `IX_vehicles_PlateNumber` (`PlateNumber`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """;
+
+            await context.Database.ExecuteSqlRawAsync(createVehiclesTableSql);
+            logger.LogInformation("Database schema initialized and vehicles table verified.");
+
+            // Seed initial vehicles if table is empty
+            if (!await context.Vehicles.AnyAsync())
+            {
+                var initialVehicles = Configurations.VehicleConfiguration.GetInitialVehicles();
+                await context.Vehicles.AddRangeAsync(initialVehicles);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Pre-seeded {Count} customer vehicles into database.", initialVehicles.Count);
+            }
+
+            // Ensure directory customers (cust-102 to cust-105) exist in users table
+            var seedCustomers = new (string Id, string Name, string Email, string Phone, string Address, int Bookings, string CreatedDate)[]
+            {
+                ("cust-102", "Malini De Silva", "malini.desilva@gmail.com", "+94 71 456 7890", "No. 18, Queen's Road, Colombo 03", 5, "2023-07-15"),
+                ("cust-103", "Dhanushka Wickrama", "dhanushka.w@yahoo.com", "+94 76 778 8990", "No. 102/3, Havelock Road, Colombo 05", 2, "2024-01-10"),
+                ("cust-104", "Ajantha Fernando", "ajantha.f@gmail.com", "+94 77 334 4556", "No. 55, Galle Road, Mount Lavinia", 1, "2024-05-20"),
+                ("cust-105", "Ruvini Jayasekara", "ruvini.j@outlook.com", "+94 71 223 3445", "No. 89, Kandy Road, Kadawatha", 4, "2023-08-05")
+            };
+
+            foreach (var sc in seedCustomers)
+            {
+                if (!await context.Users.AnyAsync(u => u.Id == sc.Id || u.Email == sc.Email))
+                {
+                    context.Users.Add(new Entities.User
+                    {
+                        Id = sc.Id,
+                        Name = sc.Name,
+                        Email = sc.Email,
+                        Phone = sc.Phone,
+                        Address = sc.Address,
+                        Role = "customer",
+                        TotalBookings = sc.Bookings,
+                        Status = "active",
+                        PasswordHash = Common.Utilities.PasswordHelper.HashPassword("Customer@123"),
+                        CreatedAt = DateTime.Parse(sc.CreatedDate, System.Globalization.CultureInfo.InvariantCulture)
+                    });
+                }
+            }
+            await context.SaveChangesAsync();
         }
         catch (Exception ex)
         {

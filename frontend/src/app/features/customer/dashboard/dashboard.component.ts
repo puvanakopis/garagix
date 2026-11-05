@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -202,7 +202,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
     </div>
   `
 })
-export class CustomerDashboardComponent {
+export class CustomerDashboardComponent implements OnInit {
   private authService = inject(AuthService);
   private bookingService = inject(BookingService);
   private customerService = inject(CustomerService);
@@ -215,10 +215,23 @@ export class CustomerDashboardComponent {
     const full = this.customerName();
     return full.split(' ')[0] || full;
   });
-  customerId = computed(() => this.authService.currentUser()?.id || 'cust-101');
+  customerId = computed(() => this.authService.currentUser()?.id || '');
 
-  customerBookings = computed(() => this.bookingService.getCustomerBookings(this.customerId()));
-  savedVehicles = computed(() => this.customerService.getCustomerVehicles(this.customerId()));
+  customerBookings = computed(() => {
+    const id = this.customerId();
+    return id ? this.bookingService.getCustomerBookings(id) : [];
+  });
+  savedVehicles = computed(() => {
+    const id = this.customerId();
+    return id ? this.customerService.getCustomerVehicles(id) : [];
+  });
+
+  ngOnInit(): void {
+    const uid = this.authService.currentUser()?.id;
+    if (uid) {
+      this.customerService.loadCustomerVehicles(uid).subscribe();
+    }
+  }
 
   totalBookings = computed(() => this.customerBookings().length);
   upcomingCount = computed(() => this.customerBookings().filter(b => b.status === RepairStatus.CONFIRMED || b.status === RepairStatus.PENDING).length);

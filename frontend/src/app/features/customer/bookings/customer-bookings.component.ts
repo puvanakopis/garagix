@@ -325,8 +325,11 @@ export class CustomerBookingsComponent {
   private bookingService = inject(BookingService);
   private toast = inject(ToastService);
 
-  customerId = computed(() => this.authService.currentUser()?.id || 'cust-101');
-  customerBookings = computed(() => this.bookingService.getCustomerBookings(this.customerId()));
+  customerId = computed(() => this.authService.currentUser()?.id || '');
+  customerBookings = computed(() => {
+    const id = this.customerId();
+    return id ? this.bookingService.getCustomerBookings(id) : [];
+  });
 
   searchQuery = signal<string>('');
   selectedTab = signal<'ALL' | 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'>('ALL');

@@ -37,6 +37,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<Mechanic> Mechanics => Set<Mechanic>();
 
+    /// <summary>
+    /// Gets the customer vehicles database set.
+    /// </summary>
+    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

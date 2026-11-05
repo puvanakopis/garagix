@@ -52,7 +52,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
                   id="regFullName"
                   type="text"
                   formControlName="fullName"
-                  placeholder="e.g. Kasun Mendis"
+                  placeholder="e.g. Ruwan Silva"
                   class="w-full bg-[#0e0d0d] border border-[#292929] pl-11 pr-4 py-3 text-white placeholder-gx-text-muted text-sm font-sans focus:outline-none focus:border-gx-primary transition-colors"
                   [class.border-rose-500]="isFieldInvalid('fullName')"
                 />

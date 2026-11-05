@@ -82,7 +82,7 @@ export type ResetStep = 'email' | 'otp' | 'password' | 'success';
                   id="recoveryEmail"
                   type="email"
                   formControlName="email"
-                  placeholder="e.g. kasun.mendis@example.lk"
+                  placeholder="e.g. yourname@example.com"
                   class="w-full bg-[#0e0d0d] border border-[#292929] pl-11 pr-4 py-3 text-white placeholder-gx-text-muted text-sm font-sans focus:outline-none focus:border-gx-primary transition-colors"
                   [class.border-rose-500]="isEmailInvalid()"
                 />

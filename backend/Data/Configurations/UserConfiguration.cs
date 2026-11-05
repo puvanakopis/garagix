@@ -66,6 +66,62 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             PasswordHash = ConvertToPasswordHash("Customer@123"),
             CreatedAt = new DateTime(2024, 3, 1, 0, 0, 0, DateTimeKind.Utc)
         });
+
+        builder.HasData(new User
+        {
+            Id = "cust-102",
+            Name = "Malini De Silva",
+            Email = "malini.desilva@gmail.com",
+            Phone = "+94 71 456 7890",
+            Address = "No. 18, Queen's Road, Colombo 03",
+            Role = "customer",
+            TotalBookings = 5,
+            Status = "active",
+            PasswordHash = ConvertToPasswordHash("Customer@123"),
+            CreatedAt = new DateTime(2023, 7, 15, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        builder.HasData(new User
+        {
+            Id = "cust-103",
+            Name = "Dhanushka Wickrama",
+            Email = "dhanushka.w@yahoo.com",
+            Phone = "+94 76 778 8990",
+            Address = "No. 102/3, Havelock Road, Colombo 05",
+            Role = "customer",
+            TotalBookings = 2,
+            Status = "active",
+            PasswordHash = ConvertToPasswordHash("Customer@123"),
+            CreatedAt = new DateTime(2024, 1, 10, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        builder.HasData(new User
+        {
+            Id = "cust-104",
+            Name = "Ajantha Fernando",
+            Email = "ajantha.f@gmail.com",
+            Phone = "+94 77 334 4556",
+            Address = "No. 55, Galle Road, Mount Lavinia",
+            Role = "customer",
+            TotalBookings = 1,
+            Status = "active",
+            PasswordHash = ConvertToPasswordHash("Customer@123"),
+            CreatedAt = new DateTime(2024, 5, 20, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        builder.HasData(new User
+        {
+            Id = "cust-105",
+            Name = "Ruvini Jayasekara",
+            Email = "ruvini.j@outlook.com",
+            Phone = "+94 71 223 3445",
+            Address = "No. 89, Kandy Road, Kadawatha",
+            Role = "customer",
+            TotalBookings = 4,
+            Status = "active",
+            PasswordHash = ConvertToPasswordHash("Customer@123"),
+            CreatedAt = new DateTime(2023, 8, 5, 0, 0, 0, DateTimeKind.Utc)
+        });
     }
 
     /// <summary>

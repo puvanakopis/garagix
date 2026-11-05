@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -312,17 +312,20 @@ export class CustomerProfileComponent {
   private toast = inject(ToastService);
 
   user = this.authService.currentUser;
-  savedVehicles = computed(() => this.customerService.getCustomerVehicles(this.user()?.id || 'cust-101'));
+  savedVehicles = computed(() => {
+    const u = this.user();
+    return u?.id ? this.customerService.getCustomerVehicles(u.id) : [];
+  });
 
   savingProfile = signal<boolean>(false);
   changingPass = signal<boolean>(false);
   showAddVehicleModal = signal<boolean>(false);
 
   profileForm: FormGroup = this.fb.group({
-    name: [this.user()?.name || 'Kasun Mendis', Validators.required],
-    email: [this.user()?.email || 'kasun.mendis@example.lk', [Validators.required, Validators.email]],
-    phone: [this.user()?.phone || '+94 77 123 4567', Validators.required],
-    address: [this.user()?.address || 'No. 42/B, Flower Road, Colombo 07, Sri Lanka', Validators.required]
+    name: [this.user()?.name || '', Validators.required],
+    email: [this.user()?.email || '', [Validators.required, Validators.email]],
+    phone: [this.user()?.phone || '', Validators.required],
+    address: [this.user()?.address || '', Validators.required]
   });
 
   passwordForm: FormGroup = this.fb.group({
@@ -341,11 +344,29 @@ export class CustomerProfileComponent {
     plateNumber: ['', Validators.required],
     brand: ['', Validators.required],
     model: ['', Validators.required],
-    year: [2021, Validators.required],
+    year: [new Date().getFullYear(), Validators.required],
     type: ['Sedan', Validators.required],
-    color: ['Pearl White'],
-    mileageKm: [38000]
+    color: [''],
+    mileageKm: [0]
   });
+
+  constructor() {
+    effect(() => {
+      const u = this.user();
+      if (u) {
+        this.profileForm.patchValue({
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          address: u.address
+        }, { emitEvent: false });
+
+        if (u.id) {
+          this.customerService.loadCustomerVehicles(u.id).subscribe();
+        }
+      }
+    });
+  }
 
   saveProfile(): void {
     if (this.profileForm.invalid) return;
@@ -370,9 +391,15 @@ export class CustomerProfileComponent {
 
   saveNewVehicle(): void {
     if (this.newVehForm.invalid) return;
+    const user = this.user();
+    if (!user?.id) {
+      this.toast.showError('Customer account not found.');
+      return;
+    }
+
     const val = this.newVehForm.value;
     this.customerService.addVehicle({
-      customerId: this.user()?.id || 'cust-101',
+      customerId: user.id,
       plateNumber: val.plateNumber.toUpperCase(),
       brand: val.brand,
       model: val.model,
@@ -380,19 +407,34 @@ export class CustomerProfileComponent {
       type: val.type,
       color: val.color,
       mileageKm: Number(val.mileageKm)
-    });
-
-    this.toast.showSuccess(`Added ${val.plateNumber} to your garage profile.`);
-    this.showAddVehicleModal.set(false);
-    this.newVehForm.reset({
-      year: 2021,
-      type: 'Sedan',
-      color: 'Pearl White'
+    }).subscribe({
+      next: (created) => {
+        this.toast.showSuccess(`Added ${created.plateNumber} to your garage profile.`);
+        this.showAddVehicleModal.set(false);
+        this.newVehForm.reset({
+          year: new Date().getFullYear(),
+          type: 'Sedan',
+          color: '',
+          mileageKm: 0
+        });
+      },
+      error: () => {
+        this.toast.showError('Failed to register vehicle on server.');
+      }
     });
   }
 
   deleteVehicle(id: string): void {
-    this.customerService.removeVehicle(id);
-    this.toast.showInfo('Vehicle removed from garage profile.');
+    const user = this.user();
+    if (!user?.id) return;
+
+    this.customerService.removeVehicle(id, user.id).subscribe({
+      next: () => {
+        this.toast.showInfo('Vehicle removed from garage profile.');
+      },
+      error: () => {
+        this.toast.showError('Failed to remove vehicle on server.');
+      }
+    });
   }
 }
