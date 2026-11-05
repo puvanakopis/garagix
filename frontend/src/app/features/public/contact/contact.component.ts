@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -322,6 +323,7 @@ export class ContactComponent {
   private sanitizer = inject(DomSanitizer);
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
+  private http = inject(HttpClient);
 
   readonly mapUrl = computed(() => {
     const addr = this.workshopSettings.address();
@@ -345,11 +347,18 @@ export class ContactComponent {
     if (this.contactForm.invalid) return;
 
     this.isSubmitting.set(true);
-    setTimeout(() => {
-      this.isSubmitting.set(false);
-      this.submittedSuccess.set(true);
-      this.toastService.show('Inquiry received! We will contact you within 30 minutes.', 'success');
-    }, 700);
+    this.http.post(`${environment.apiUrl}/contact`, this.contactForm.value).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.submittedSuccess.set(true);
+        this.toastService.show('Inquiry received! We will contact you within 30 minutes.', 'success');
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        const msg = err?.error?.message || 'Failed to submit inquiry. Please try again.';
+        this.toastService.show(msg, 'error');
+      }
+    });
   }
 
   resetForm() {

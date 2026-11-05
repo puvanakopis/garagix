@@ -69,6 +69,8 @@ public static class ServiceExtensions
         services.AddScoped<IBookingService, BookingService>();
         services.AddScoped<ITrackRepairService, TrackRepairService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IContactService, ContactService>();
 
         services.AddFluentValidationAutoValidation();
         services.AddValidatorsFromAssemblyContaining<RegisterValidator>();

@@ -372,21 +372,36 @@ export class CustomerProfileComponent {
     if (this.profileForm.invalid) return;
     this.savingProfile.set(true);
 
-    setTimeout(() => {
-      this.savingProfile.set(false);
-      this.authService.updateProfile(this.profileForm.value);
-    }, 700);
+    this.authService.updateProfileApi(this.profileForm.value).subscribe({
+      next: () => {
+        this.savingProfile.set(false);
+        this.toast.showSuccess('Profile updated successfully!');
+      },
+      error: (err) => {
+        this.savingProfile.set(false);
+        const msg = err?.error?.message || 'Failed to update profile. Please try again.';
+        this.toast.showError(msg);
+      }
+    });
   }
 
   changePassword(): void {
     if (this.passwordForm.invalid) return;
     this.changingPass.set(true);
 
-    setTimeout(() => {
-      this.changingPass.set(false);
-      this.passwordForm.reset();
-      this.toast.showSuccess('Security password updated successfully!');
-    }, 700);
+    const { currentPassword, newPassword, confirmPassword } = this.passwordForm.value;
+    this.authService.changePassword(currentPassword, newPassword, confirmPassword).subscribe({
+      next: (res) => {
+        this.changingPass.set(false);
+        this.passwordForm.reset();
+        this.toast.showSuccess(res.message || 'Security password updated successfully!');
+      },
+      error: (err) => {
+        this.changingPass.set(false);
+        const msg = err?.error?.message || 'Failed to update password. Please verify current password.';
+        this.toast.showError(msg);
+      }
+    });
   }
 
   saveNewVehicle(): void {

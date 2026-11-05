@@ -273,6 +273,26 @@ public static class DbInitializer
             await context.Database.ExecuteSqlRawAsync(createBookingsTableSql);
             logger.LogInformation("Database schema initialized and bookings table verified.");
 
+            // Explicitly ensure the contact_inquiries table exists
+            const string createContactInquiriesTableSql = """
+                CREATE TABLE IF NOT EXISTS `contact_inquiries` (
+                    `Id` VARCHAR(50) NOT NULL PRIMARY KEY,
+                    `FirstName` VARCHAR(100) NOT NULL,
+                    `LastName` VARCHAR(100) NOT NULL,
+                    `Email` VARCHAR(150) NOT NULL,
+                    `Phone` VARCHAR(30) NOT NULL,
+                    `ServiceType` VARCHAR(100) NOT NULL,
+                    `Message` LONGTEXT NOT NULL,
+                    `Status` VARCHAR(30) NOT NULL DEFAULT 'pending',
+                    `CreatedAt` DATETIME(6) NOT NULL,
+                    INDEX `IX_contact_inquiries_Email` (`Email`),
+                    INDEX `IX_contact_inquiries_Status` (`Status`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """;
+
+            await context.Database.ExecuteSqlRawAsync(createContactInquiriesTableSql);
+            logger.LogInformation("Database schema initialized and contact_inquiries table verified.");
+
             // Seed initial bookings if table is empty
             if (!await context.Bookings.AnyAsync())
             {

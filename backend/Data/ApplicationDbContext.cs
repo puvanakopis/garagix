@@ -52,6 +52,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<Booking> Bookings => Set<Booking>();
 
+    /// <summary>
+    /// Gets the public customer contact inquiries database set.
+    /// </summary>
+    public DbSet<ContactInquiry> ContactInquiries => Set<ContactInquiry>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

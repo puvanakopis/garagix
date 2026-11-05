@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../../../core/services/report.service';
@@ -50,12 +50,12 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
             <span class="w-2 h-2 rounded-full bg-[#d70006]"></span>
             <span class="text-xs text-neutral-400 font-medium">Gross Billing (MTD)</span>
           </div>
-          <span class="text-base font-bold font-oxanium text-[#d70006] truncate max-w-[130px]">LKR {{ summary.totalRevenueLkr | number }}</span>
+          <span class="text-base font-bold font-oxanium text-[#d70006] truncate max-w-[130px]">LKR {{ summary().totalRevenueLkr | number }}</span>
         </div>
 
         <div class="bg-[#141314] border border-[#222222] rounded-xl px-4 py-3 flex items-center justify-between">
           <span class="text-xs text-neutral-400 font-medium">Avg Work Order</span>
-          <span class="text-base font-bold font-oxanium text-white">LKR {{ summary.averageRepairCostLkr | number }}</span>
+          <span class="text-base font-bold font-oxanium text-white">LKR {{ summary().averageRepairCostLkr | number }}</span>
         </div>
 
         <div class="bg-[#141314] border border-[#222222] rounded-xl px-4 py-3 flex items-center justify-between">
@@ -76,8 +76,13 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
       <section class="bg-[#141314] border border-[#222222] rounded-xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-3">
           <div class="flex items-center gap-2">
-            <label class="text-xs font-semibold text-neutral-300">Period:</label>
-            <select [(ngModel)]="selectedPeriod" class="bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-lg px-3 py-1.5 text-white text-xs outline-none cursor-pointer">
+            <label for="repPeriod" class="text-xs font-semibold text-neutral-300">Period:</label>
+            <select
+              id="repPeriod"
+              [(ngModel)]="selectedPeriod"
+              (ngModelChange)="onPeriodChange()"
+              class="bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-lg px-3 py-1.5 text-white text-xs outline-none cursor-pointer"
+            >
               <option value="last_6_months">Last 6 Months (May - Nov 2026)</option>
               <option value="q3_2026">Q3 2026 (Jul - Sep)</option>
               <option value="year_to_date">Year-To-Date (2026)</option>
@@ -85,8 +90,12 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
           </div>
 
           <div class="flex items-center gap-2">
-            <label class="text-xs font-semibold text-neutral-300">Focus:</label>
-            <select [(ngModel)]="reportCategory" class="bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-lg px-3 py-1.5 text-white text-xs outline-none cursor-pointer">
+            <label for="repCat" class="text-xs font-semibold text-neutral-300">Focus:</label>
+            <select
+              id="repCat"
+              [(ngModel)]="reportCategory"
+              class="bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-lg px-3 py-1.5 text-white text-xs outline-none cursor-pointer"
+            >
               <option value="ALL">Complete Workshop Overview</option>
               <option value="REVENUE">Revenue &amp; Financials</option>
               <option value="OPERATIONS">Bay Throughput &amp; Mechanics</option>
@@ -96,7 +105,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
 
         <div class="flex items-center gap-2 text-xs text-neutral-400">
           <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Sri Lanka Automotive Telemetry Verified</span>
+          <span>Live Database Telemetry Verified</span>
         </div>
       </section>
 
@@ -158,7 +167,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
           </div>
 
           <div class="space-y-3.5 pt-1">
-            @for (srv of summary.topServices; track srv.serviceName) {
+            @for (srv of summary().topServices; track srv.serviceName) {
               <div>
                 <div class="flex justify-between text-xs mb-1">
                   <span class="text-white font-medium">{{ srv.serviceName }}</span>
@@ -197,7 +206,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
               </tr>
             </thead>
             <tbody class="divide-y divide-[#1e1c1d]">
-              @for (m of summary.mechanicWorkloads; track m.mechanicId) {
+              @for (m of summary().mechanicWorkloads; track m.mechanicId) {
                 <tr class="hover:bg-[#181717] transition-colors">
                   <td class="py-3 px-4 font-bold text-white text-xs font-oxanium">{{ m.mechanicName }}</td>
                   <td class="py-3 px-4 text-xs text-neutral-300">{{ m.specialization }}</td>
@@ -218,17 +227,25 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
     </div>
   `
 })
-export class AdminReportsComponent {
+export class AdminReportsComponent implements OnInit {
   private reportService = inject(ReportService);
   private toast = inject(ToastService);
 
-  summary = this.reportService.getSummary();
+  summary = this.reportService.summary;
 
   selectedPeriod = 'last_6_months';
   reportCategory = 'ALL';
 
+  ngOnInit(): void {
+    this.reportService.loadSummaryReport(this.selectedPeriod).subscribe();
+  }
+
+  onPeriodChange(): void {
+    this.reportService.loadSummaryReport(this.selectedPeriod).subscribe();
+  }
+
   exportCsv(): void {
-    this.reportService.exportCsvReport();
+    this.reportService.exportCsvReport(this.selectedPeriod);
     this.toast.showSuccess('Generated and downloaded CSV report.');
   }
 

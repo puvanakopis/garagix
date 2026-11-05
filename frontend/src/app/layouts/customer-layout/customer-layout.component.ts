@@ -86,9 +86,30 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
             <app-icon name="user" [size]="18" />
             <span>Profile</span>
           </a>
+
+          <div class="px-3 pt-4 pb-1 text-[10px] font-bold tracking-widest uppercase text-[#58595b] font-oxanium">PUBLIC SITE</div>
+          <a
+            routerLink="/"
+            (click)="closeMobileSidebar()"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-neutral-300 hover:text-white hover:bg-[#1a1919] transition-all"
+          >
+            <app-icon name="arrow-left" [size]="18" strokeColor="#d70006" />
+            <span>Public Home Page</span>
+          </a>
         </nav>
 
-        <div class="p-3 border-t border-[#222222] bg-[#0c0a0a]">
+        <div class="p-3 border-t border-[#222222] bg-[#0c0a0a] space-y-2">
+          <a
+            routerLink="/"
+            (click)="closeMobileSidebar()"
+            class="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg bg-[#141314] hover:bg-[#1c1b1c] border border-[#262526] hover:border-[#d70006]/50 text-xs font-semibold text-neutral-300 hover:text-white transition-all group cursor-pointer"
+            title="Navigate to Garagix Public Home Page"
+          >
+            <app-icon name="arrow-left" [size]="14" strokeColor="#d70006" />
+            <span>Public Home</span>
+            <app-icon name="external-link" [size]="12" strokeColor="#878f97" />
+          </a>
+
           <div class="flex items-center gap-3 p-2 rounded-lg bg-[#141314] border border-[#222222]">
             <div class="w-8 h-8 rounded-full bg-[#201517] border border-[#d70006]/40 flex items-center justify-center shrink-0 text-[#d70006] font-bold text-xs font-oxanium">
               {{ authService.currentUser()?.name?.charAt(0) || 'C' }}
