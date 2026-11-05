@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } 
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
 import { BookingService } from '../../../core/services/booking.service';
 import { CustomerService } from '../../../core/services/customer.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -17,13 +18,24 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
   template: `
     <div class="space-y-6 max-w-6xl mx-auto">
       <!-- 1. Header with Personal Greeting -->
-      <header class="pb-2 border-b border-[#222222]">
-        <h1 class="text-2xl sm:text-3xl font-bold font-oxanium text-white tracking-tight">
-          Hello, <span class="text-[#d70006]">{{ customerFirstName() }}</span>
-        </h1>
-        <p class="text-xs sm:text-sm text-neutral-400 mt-1">
-          Your garage is running smoothly. Ready whenever you need maintenance or repairs.
-        </p>
+      <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#222222]">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold font-oxanium text-white tracking-tight">
+            Hello, <span class="text-[#d70006]">{{ customerFirstName() }}</span>
+          </h1>
+          <p class="text-xs sm:text-sm text-neutral-400 mt-1">
+            Your garage is running smoothly. Ready whenever you need maintenance or repairs.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <a
+            routerLink="/customer/book-repair"
+            class="px-3.5 py-1.5 rounded-lg bg-[#d70006] hover:bg-[#b80005] text-white text-xs font-bold font-oxanium uppercase tracking-wider transition-colors shadow-lg shadow-[#d70006]/20 flex items-center gap-1.5"
+          >
+            <app-icon name="plus" [size]="14" strokeColor="#ffffff" />
+            <span>Book Service</span>
+          </a>
+        </div>
       </header>
 
       <!-- 2. Minimal Status Summary Bar (Compact, subtle chips) -->
@@ -55,7 +67,81 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
         </div>
       </section>
 
-      <!-- 3. My Saved Vehicles -->
+      <!-- 3. Active Vehicle Repair Live Telemetry Banner (If active vehicle in workshop) -->
+      @if (activeRepair(); as repair) {
+        <section class="bg-gradient-to-r from-[#1c1213] to-[#141314] border border-[#d70006]/40 rounded-xl p-5 space-y-4 shadow-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#2d1b1d]">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#d70006] animate-ping"></span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-[#d70006] font-oxanium">LIVE WORKSHOP BAY TELEMETRY</span>
+              </div>
+              <h2 class="text-base sm:text-lg font-bold font-oxanium text-white tracking-wide">
+                {{ repair.vehicleModel }} <span class="font-mono text-xs font-normal text-neutral-400">({{ repair.vehiclePlate }})</span>
+              </h2>
+            </div>
+
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+              <app-status-badge [status]="repair.status" />
+              <span class="px-2 py-0.5 rounded bg-[#141314] border border-[#262526] text-xs font-bold font-oxanium text-[#d70006]">
+                {{ repair.progressPercent }}% Complete
+              </span>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="space-y-1.5">
+            <div class="w-full h-2.5 rounded-full bg-[#141314] border border-[#262526] overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-red-600 to-[#d70006] rounded-full transition-all duration-700" [style.width.%]="repair.progressPercent"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-neutral-400 font-oxanium">
+              <span>Intake &amp; Inspection</span>
+              <span>Diagnostics &amp; Repair</span>
+              <span>Quality QA &amp; Handover</span>
+            </div>
+          </div>
+
+          <!-- Key Stats Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
+            <div class="p-3 rounded-lg bg-[#141314]/80 border border-[#262526]">
+              <span class="text-neutral-500 block text-[10px] uppercase font-oxanium">Estimated Handover</span>
+              <strong class="text-white font-oxanium text-xs sm:text-sm">{{ repair.estimatedCompletion || 'Under assessment' }}</strong>
+            </div>
+
+            <div class="p-3 rounded-lg bg-[#141314]/80 border border-[#262526]">
+              <span class="text-neutral-500 block text-[10px] uppercase font-oxanium">Lead Bay Specialist</span>
+              <strong class="text-white font-oxanium text-xs sm:text-sm flex items-center gap-1.5">
+                <app-icon name="user" [size]="12" strokeColor="#d70006" />
+                {{ repair.assignedMechanicName || 'To Be Assigned' }}
+              </strong>
+            </div>
+
+            <div class="p-3 rounded-lg bg-[#141314]/80 border border-[#262526] flex items-center justify-between sm:justify-end">
+              <div>
+                <span class="text-neutral-500 block text-[10px] uppercase font-oxanium">Tracking Code</span>
+                <span class="font-mono text-xs font-bold text-white">{{ repair.referenceNumber }}</span>
+              </div>
+              <a
+                [routerLink]="['/customer/track-repair']"
+                [queryParams]="{ ref: repair.referenceNumber }"
+                class="ml-3 px-3 py-1.5 bg-[#d70006] hover:bg-[#b80005] text-white rounded-lg font-oxanium text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1"
+              >
+                <app-icon name="activity" [size]="13" strokeColor="#ffffff" />
+                <span>Track Live</span>
+              </a>
+            </div>
+          </div>
+
+          @if (repair.internalNotes) {
+            <div class="p-3 rounded-lg bg-[#141314]/60 border border-[#262526] text-xs text-neutral-300">
+              <span class="text-[10px] uppercase tracking-wider text-neutral-500 block font-oxanium mb-0.5">Technician Bay Notes:</span>
+              <p class="italic leading-relaxed whitespace-pre-line">{{ repair.internalNotes }}</p>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- 4. My Saved Vehicles -->
       <section class="space-y-3">
         <div class="flex items-center justify-between">
           <div>
@@ -101,11 +187,18 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
                 </a>
               </div>
             </div>
+          } @empty {
+            <div class="col-span-full p-8 text-center bg-[#141314] border border-[#222222] rounded-xl text-neutral-400 text-xs space-y-2">
+              <p>No vehicles registered in your garage profile yet.</p>
+              <a routerLink="/customer/profile" class="text-xs text-[#d70006] hover:underline font-semibold inline-block">
+                + Add Your First Vehicle
+              </a>
+            </div>
           }
         </div>
       </section>
 
-      <!-- 4. Recent Service Visits (Clean, modern list instead of wide cumbersome table) -->
+      <!-- 5. Recent Service Visits -->
       <section class="space-y-3 pt-2">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -186,9 +279,10 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
                 <a
                   [routerLink]="['/customer/track-repair']"
                   [queryParams]="{ ref: booking.referenceNumber }"
-                  class="px-3 py-1.5 rounded-lg bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors shrink-0"
+                  class="px-3 py-1.5 rounded-lg bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors shrink-0 flex items-center gap-1"
                 >
-                  Track
+                  <app-icon name="activity" [size]="12" strokeColor="#d70006" />
+                  <span>Track</span>
                 </a>
               </div>
             </div>
@@ -204,56 +298,90 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
 })
 export class CustomerDashboardComponent implements OnInit {
   private authService = inject(AuthService);
+  private dashboardService = inject(DashboardService);
   private bookingService = inject(BookingService);
   private customerService = inject(CustomerService);
   private toastService = inject(ToastService);
 
   historyFilter = signal<'ALL' | 'ACTIVE' | 'COMPLETED'>('ALL');
 
-  customerName = computed(() => this.authService.currentUser()?.name || 'Customer');
-  customerFirstName = computed(() => {
-    const full = this.customerName();
-    return full.split(' ')[0] || full;
+  // Real-time backend API data
+  private customerData = this.dashboardService.customerDashboard;
+
+  customerName = computed(() => {
+    return this.customerData()?.customer?.fullName || this.authService.currentUser()?.name || 'Customer';
   });
-  customerId = computed(() => this.authService.currentUser()?.id || '');
+
+  customerFirstName = computed(() => {
+    const full = this.customerData()?.customer?.firstName;
+    if (full) return full;
+    const name = this.customerName();
+    return name.split(' ')[0] || name;
+  });
+
+  customerId = computed(() => {
+    return this.customerData()?.customer?.id || this.authService.currentUser()?.id || '';
+  });
 
   customerBookings = computed(() => {
+    const fromApi = this.customerData()?.recentVisits;
+    if (fromApi && fromApi.length > 0) return fromApi;
+
     const id = this.customerId();
     return id ? this.bookingService.getCustomerBookings(id) : [];
   });
+
   savedVehicles = computed(() => {
+    const fromApi = this.customerData()?.vehicles;
+    if (fromApi && fromApi.length > 0) return fromApi;
+
     const id = this.customerId();
     return id ? this.customerService.getCustomerVehicles(id) : [];
   });
 
-  ngOnInit(): void {
-    const uid = this.authService.currentUser()?.id;
-    if (uid) {
-      this.customerService.loadCustomerVehicles(uid).subscribe();
-      this.bookingService.loadCustomerBookings(uid).subscribe();
-    }
-  }
+  // Top-level metric chips
+  activeRepairCount = computed(() => {
+    return this.customerData()?.metrics?.inWorkshopCount ??
+      this.customerBookings().filter(b =>
+        [RepairStatus.IN_PROGRESS, RepairStatus.WAITING_FOR_PARTS, RepairStatus.ON_HOLD, RepairStatus.QUALITY_CHECK, RepairStatus.READY_FOR_PICKUP].includes(b.status)
+      ).length;
+  });
 
-  totalBookings = computed(() => this.customerBookings().length);
-  upcomingCount = computed(() => this.customerBookings().filter(b => b.status === RepairStatus.CONFIRMED || b.status === RepairStatus.PENDING).length);
-  activeRepairCount = computed(() => this.customerBookings().filter(b =>
-    b.status === RepairStatus.IN_PROGRESS ||
-    b.status === RepairStatus.WAITING_FOR_PARTS ||
-    b.status === RepairStatus.ON_HOLD ||
-    b.status === RepairStatus.QUALITY_CHECK ||
-    b.status === RepairStatus.READY_FOR_PICKUP
-  ).length);
-  completedCount = computed(() => this.customerBookings().filter(b => b.status === RepairStatus.DELIVERED).length);
+  upcomingCount = computed(() => {
+    return this.customerData()?.metrics?.upcomingCount ??
+      this.customerBookings().filter(b => b.status === RepairStatus.CONFIRMED || b.status === RepairStatus.PENDING).length;
+  });
 
-  activeBooking = computed(() => {
-    return this.customerBookings().find(b =>
-      b.status === RepairStatus.IN_PROGRESS ||
-      b.status === RepairStatus.WAITING_FOR_PARTS ||
-      b.status === RepairStatus.ON_HOLD ||
-      b.status === RepairStatus.QUALITY_CHECK ||
-      b.status === RepairStatus.READY_FOR_PICKUP ||
-      b.status === RepairStatus.CONFIRMED
+  completedCount = computed(() => {
+    return this.customerData()?.metrics?.completedCount ??
+      this.customerBookings().filter(b => b.status === RepairStatus.DELIVERED).length;
+  });
+
+  // Prominent active repair telemetry banner
+  activeRepair = computed(() => {
+    const fromApi = this.customerData()?.activeRepair;
+    if (fromApi) return fromApi;
+
+    const b = this.customerBookings().find(item =>
+      [RepairStatus.IN_PROGRESS, RepairStatus.WAITING_FOR_PARTS, RepairStatus.ON_HOLD, RepairStatus.QUALITY_CHECK, RepairStatus.READY_FOR_PICKUP, RepairStatus.CONFIRMED].includes(item.status)
     );
+
+    if (!b) return null;
+
+    return {
+      id: b.id,
+      referenceNumber: b.referenceNumber,
+      vehiclePlate: b.vehicle.plateNumber,
+      vehicleModel: `${b.vehicle.brand} ${b.vehicle.model}`,
+      status: b.status,
+      progressPercent: b.progressPercent,
+      estimatedCompletion: b.estimatedCompletion,
+      assignedMechanicName: b.assignedMechanicName || 'Lead Bay Specialist',
+      internalNotes: b.internalNotes,
+      appointmentDate: b.appointmentDate,
+      appointmentTime: b.appointmentTime,
+      estimatedPriceLkr: b.estimatedPriceLkr
+    };
   });
 
   filteredBookings = computed(() => {
@@ -267,6 +395,17 @@ export class CustomerDashboardComponent implements OnInit {
     }
     return list.slice(0, 5);
   });
+
+  ngOnInit(): void {
+    const uid = this.authService.currentUser()?.id;
+    if (uid) {
+      this.dashboardService.loadCustomerDashboard(uid).subscribe();
+      this.customerService.loadCustomerVehicles(uid).subscribe();
+      this.bookingService.loadCustomerBookings(uid).subscribe();
+    } else {
+      this.dashboardService.loadCustomerDashboard().subscribe();
+    }
+  }
 
   copyReference(ref: string): void {
     if (navigator?.clipboard) {
