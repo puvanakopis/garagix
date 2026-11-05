@@ -82,3 +82,4 @@ public class UpdateBookingRequest
     /// </summary>
     public string? AssignedMechanicName { get; set; }
 }
+

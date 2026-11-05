@@ -155,3 +155,4 @@ public class Booking
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
 }
+

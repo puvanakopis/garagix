@@ -87,3 +87,4 @@ public class CreateBookingRequest
     /// </summary>
     public decimal EstimatedPriceLkr { get; set; }
 }
+

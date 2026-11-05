@@ -166,3 +166,4 @@ public class BookingVehicleDto
     /// </summary>
     public int? MileageKm { get; set; }
 }
+

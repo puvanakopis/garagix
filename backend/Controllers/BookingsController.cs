@@ -307,3 +307,4 @@ public class BookingsController(
         return NoContent();
     }
 }
+

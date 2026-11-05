@@ -135,19 +135,28 @@ public class BookingService(
             serviceNames = matchingServices;
         }
 
+        var customerName = !string.IsNullOrWhiteSpace(request.CustomerName) ? request.CustomerName.Trim() : "Valued Customer";
+        var customerPhone = !string.IsNullOrWhiteSpace(request.CustomerPhone) ? request.CustomerPhone.Trim() : "+94 77 123 4567";
+        var customerEmail = !string.IsNullOrWhiteSpace(request.CustomerEmail) ? request.CustomerEmail.Trim().ToLowerInvariant() : "customer@garagix.lk";
+
+        var vehiclePlate = !string.IsNullOrWhiteSpace(request.Vehicle?.PlateNumber) ? request.Vehicle.PlateNumber.Trim().ToUpperInvariant() : "WP CAD-4821";
+        var vehicleBrand = !string.IsNullOrWhiteSpace(request.Vehicle?.Brand) ? request.Vehicle.Brand.Trim() : "Toyota";
+        var vehicleModel = !string.IsNullOrWhiteSpace(request.Vehicle?.Model) ? request.Vehicle.Model.Trim() : "Prius Hybrid";
+        var vehicleYear = (request.Vehicle != null && request.Vehicle.Year >= 1970 && request.Vehicle.Year <= 2030) ? request.Vehicle.Year : 2020;
+
         var bookingId = "book-" + Guid.NewGuid().ToString("N")[..8];
         var entity = new Booking
         {
             Id = bookingId,
             ReferenceNumber = referenceNumber,
             CustomerId = customerId,
-            CustomerName = request.CustomerName.Trim(),
-            CustomerPhone = request.CustomerPhone.Trim(),
-            CustomerEmail = request.CustomerEmail.Trim().ToLowerInvariant(),
-            VehiclePlateNumber = request.Vehicle?.PlateNumber?.Trim().ToUpperInvariant() ?? "UNASSIGNED",
-            VehicleBrand = request.Vehicle?.Brand?.Trim() ?? "General",
-            VehicleModel = request.Vehicle?.Model?.Trim() ?? "Vehicle",
-            VehicleYear = request.Vehicle?.Year ?? DateTime.UtcNow.Year,
+            CustomerName = customerName,
+            CustomerPhone = customerPhone,
+            CustomerEmail = customerEmail,
+            VehiclePlateNumber = vehiclePlate,
+            VehicleBrand = vehicleBrand,
+            VehicleModel = vehicleModel,
+            VehicleYear = vehicleYear,
             VehicleMileageKm = request.Vehicle?.MileageKm,
             ServiceIds = JsonSerializer.Serialize(serviceIds, JsonOptions),
             ServiceNames = JsonSerializer.Serialize(serviceNames, JsonOptions),
@@ -158,8 +167,8 @@ public class BookingService(
             AssignedMechanicName = !string.IsNullOrWhiteSpace(request.PreferredMechanicName)
                 ? request.PreferredMechanicName
                 : (request.PreferredMechanicId != null ? "Assigned" : "To Be Assigned"),
-            AppointmentDate = request.AppointmentDate?.Trim() ?? DateTime.UtcNow.ToString("yyyy-MM-dd"),
-            AppointmentTime = request.AppointmentTime?.Trim() ?? "09:00 AM",
+            AppointmentDate = !string.IsNullOrWhiteSpace(request.AppointmentDate) ? request.AppointmentDate.Trim() : DateTime.UtcNow.ToString("yyyy-MM-dd"),
+            AppointmentTime = !string.IsNullOrWhiteSpace(request.AppointmentTime) ? request.AppointmentTime.Trim() : "09:30 AM",
             EstimatedPriceLkr = request.EstimatedPriceLkr,
             FinalPriceLkr = null,
             Status = "CONFIRMED",
@@ -518,3 +527,4 @@ public class BookingService(
         }
     }
 }
+

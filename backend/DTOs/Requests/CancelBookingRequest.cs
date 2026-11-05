@@ -10,3 +10,4 @@ public class CancelBookingRequest
     /// </summary>
     public string? Reason { get; set; }
 }
+

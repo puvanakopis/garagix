@@ -20,3 +20,4 @@ public class UpdateBookingStatusRequest
     /// </summary>
     public string? Note { get; set; }
 }
+

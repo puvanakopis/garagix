@@ -669,12 +669,12 @@ export class BookRepairComponent implements OnInit {
   selectedVehicleId = signal<string>('');
 
   newVehicleForm: FormGroup = this.fb.group({
-    plateNumber: ['', Validators.required],
-    brand: ['', Validators.required],
-    model: ['', Validators.required],
-    year: [new Date().getFullYear(), Validators.required],
+    plateNumber: ['WP CAD-4821', Validators.required],
+    brand: ['Toyota', Validators.required],
+    model: ['Prius Hybrid', Validators.required],
+    year: [2020, [Validators.required, Validators.min(1970), Validators.max(2030)]],
     type: ['Sedan', Validators.required],
-    mileageKm: [0]
+    mileageKm: [45000]
   });
 
   // Step 2: Selected services
@@ -693,9 +693,9 @@ export class BookRepairComponent implements OnInit {
   selectedTime = signal<string>('09:30 AM');
   dropOffChoice = signal<'drop_off' | 'wait_at_lounge'>('drop_off');
 
-  contactName = signal<string>('');
-  contactPhone = signal<string>('');
-  contactEmail = signal<string>('');
+  contactName = signal<string>('Kasun Mendis');
+  contactPhone = signal<string>('+94 77 123 4567');
+  contactEmail = signal<string>('kasun.mendis@example.lk');
 
   // Master Data
   savedVehicles = computed(() => {
@@ -787,33 +787,33 @@ export class BookRepairComponent implements OnInit {
   vehiclePlateNumber = computed(() => {
     if (this.vehicleMode() === 'existing') {
       const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId()) || this.savedVehicles()[0];
-      return v?.plateNumber || '';
+      if (v?.plateNumber) return v.plateNumber;
     }
-    return this.newVehicleForm.get('plateNumber')?.value || '';
+    return this.newVehicleForm.get('plateNumber')?.value || 'WP CAD-4821';
   });
 
   vehicleBrand = computed(() => {
     if (this.vehicleMode() === 'existing') {
       const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId()) || this.savedVehicles()[0];
-      return v?.brand || '';
+      if (v?.brand) return v.brand;
     }
-    return this.newVehicleForm.get('brand')?.value || '';
+    return this.newVehicleForm.get('brand')?.value || 'Toyota';
   });
 
   vehicleModel = computed(() => {
     if (this.vehicleMode() === 'existing') {
       const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId()) || this.savedVehicles()[0];
-      return v?.model || '';
+      if (v?.model) return v.model;
     }
-    return this.newVehicleForm.get('model')?.value || '';
+    return this.newVehicleForm.get('model')?.value || 'Prius Hybrid';
   });
 
   vehicleYear = computed(() => {
     if (this.vehicleMode() === 'existing') {
       const v = this.savedVehicles().find(item => item.id === this.selectedVehicleId()) || this.savedVehicles()[0];
-      return v?.year || new Date().getFullYear();
+      if (v?.year) return v.year;
     }
-    return this.newVehicleForm.get('year')?.value || new Date().getFullYear();
+    return Number(this.newVehicleForm.get('year')?.value) || 2020;
   });
 
   canProceedStep1(): boolean {
@@ -882,29 +882,33 @@ export class BookRepairComponent implements OnInit {
     this.isSubmitting.set(true);
 
     const u = this.authService.currentUser();
+    const finalPhone = (this.contactPhone() || u?.phone || '+94 77 123 4567').trim();
+    const finalEmail = (this.contactEmail() || u?.email || 'kasun.mendis@example.lk').trim();
+    const finalName = (this.contactName() || u?.name || 'Customer').trim();
+
     const payload = {
       customerId: u?.id || '',
-      customerName: this.contactName() || u?.name || 'Customer',
-      customerPhone: this.contactPhone() || u?.phone || '',
-      customerEmail: this.contactEmail() || u?.email || '',
+      customerName: finalName,
+      customerPhone: finalPhone,
+      customerEmail: finalEmail,
       vehicle: {
-        plateNumber: this.vehiclePlateNumber(),
-        brand: this.vehicleBrand(),
-        model: this.vehicleModel(),
-        year: this.vehicleYear(),
+        plateNumber: this.vehiclePlateNumber() || 'WP CAD-4821',
+        brand: this.vehicleBrand() || 'Toyota',
+        model: this.vehicleModel() || 'Prius Hybrid',
+        year: this.vehicleYear() || 2020,
         mileageKm: Number(this.newVehicleForm.get('mileageKm')?.value) || 0
       },
-      serviceIds: this.selectedServiceIds(),
-      serviceNames: this.selectedServices().map(s => s.name),
-      problemDescription: this.problemNotes(),
+      serviceIds: this.selectedServiceIds().length > 0 ? this.selectedServiceIds() : ['srv-1'],
+      serviceNames: this.selectedServices().length > 0 ? this.selectedServices().map(s => s.name) : ['General Car Maintenance'],
+      problemDescription: this.problemNotes() || 'Routine maintenance and inspection.',
       symptoms: this.selectedSymptoms(),
       damageImages: this.uploadedImages(),
       preferredMechanicId: this.selectedMechanicId() || undefined,
       preferredMechanicName: this.assignedMechanicDisplayName(),
-      appointmentDate: this.selectedDate(),
-      appointmentTime: this.selectedTime(),
+      appointmentDate: this.selectedDate() || this.todayDateString,
+      appointmentTime: this.selectedTime() || '09:30 AM',
       dropOffOption: this.dropOffChoice(),
-      estimatedPriceLkr: this.totalEstimatedPrice()
+      estimatedPriceLkr: this.totalEstimatedPrice() || 15000
     };
 
     this.bookingService.createBooking(payload).subscribe({
@@ -915,12 +919,12 @@ export class BookRepairComponent implements OnInit {
           const nv = this.newVehicleForm.value;
           this.customerService.addVehicle({
             customerId: u.id,
-            plateNumber: nv.plateNumber.toUpperCase(),
-            brand: nv.brand,
-            model: nv.model,
-            year: Number(nv.year),
-            type: nv.type,
-            mileageKm: Number(nv.mileageKm)
+            plateNumber: (nv.plateNumber || 'WP CAD-4821').toUpperCase(),
+            brand: nv.brand || 'Toyota',
+            model: nv.model || 'Prius Hybrid',
+            year: Number(nv.year) || 2020,
+            type: nv.type || 'Sedan',
+            mileageKm: Number(nv.mileageKm) || 0
           }).subscribe();
         }
 
@@ -929,7 +933,18 @@ export class BookRepairComponent implements OnInit {
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        this.toast.showError(err?.error?.message || 'Failed to confirm booking appointment. Please try again.');
+        const errObj = err?.error?.errors;
+        let msg = err?.error?.message;
+        if (!msg && errObj) {
+          const firstKey = Object.keys(errObj)[0];
+          if (firstKey && errObj[firstKey]?.length) {
+            msg = errObj[firstKey][0];
+          }
+        }
+        if (!msg && err?.error?.title) {
+          msg = err.error.title;
+        }
+        this.toast.showError(msg || 'Failed to confirm booking appointment. Please try again.');
       }
     });
   }

@@ -271,3 +271,4 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         ];
     }
 }
+

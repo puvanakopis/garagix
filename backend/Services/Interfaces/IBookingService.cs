@@ -104,3 +104,4 @@ public interface IBookingService
     /// <returns>True if deleted, false if not found.</returns>
     Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default);
 }
+
