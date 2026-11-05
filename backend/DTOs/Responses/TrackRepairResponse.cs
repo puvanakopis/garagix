@@ -187,3 +187,4 @@ public class TrackFeedSummaryDto
     /// </summary>
     public int ProgressPercent { get; set; }
 }
+

@@ -481,6 +481,7 @@ export class BookingService {
     return this.http.patch<Booking>(`${this.apiUrl}/${id}/status`, {
       status: newStatus,
       progressPercent: percent,
+      note: note,
       internalNote: note
     }).pipe(
       tap((updated) => {

@@ -73,6 +73,11 @@ public class UpdateBookingRequest
     public int? ProgressPercent { get; set; }
 
     /// <summary>
+    /// Gets or sets estimated delivery or handover text displayed on live customer telemetry.
+    /// </summary>
+    public string? EstimatedCompletion { get; set; }
+
+    /// <summary>
     /// Gets or sets assigned technician ID.
     /// </summary>
     public string? AssignedMechanicId { get; set; }

@@ -292,10 +292,27 @@ public class BookingService(
             entity.AssignedMechanicName = request.AssignedMechanicName.Trim();
         }
 
+        if (!string.IsNullOrWhiteSpace(request.EstimatedCompletion))
+        {
+            entity.EstimatedCompletion = request.EstimatedCompletion.Trim();
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Status))
         {
             entity.Status = request.Status.Trim().ToUpperInvariant();
             entity.ProgressPercent = request.ProgressPercent ?? CalculateProgress(entity.Status);
+
+            if (string.IsNullOrWhiteSpace(request.EstimatedCompletion))
+            {
+                if (entity.Status is "DELIVERED" or "COMPLETED")
+                {
+                    entity.EstimatedCompletion = $"Completed on {DateTime.UtcNow:MMM dd, yyyy}";
+                }
+                else if (entity.Status is "READY_FOR_PICKUP")
+                {
+                    entity.EstimatedCompletion = "Ready for Collection";
+                }
+            }
         }
         else if (request.ProgressPercent.HasValue)
         {
@@ -335,9 +352,13 @@ public class BookingService(
                 : $"{entity.InternalNotes}\n[{timestamp}] {request.Note.Trim()}";
         }
 
-        if (status == "DELIVERED")
+        if (status is "DELIVERED" or "COMPLETED")
         {
             entity.EstimatedCompletion = $"Completed on {DateTime.UtcNow:MMM dd, yyyy}";
+        }
+        else if (status is "READY_FOR_PICKUP")
+        {
+            entity.EstimatedCompletion = "Ready for Collection";
         }
 
         entity.UpdatedAt = DateTime.UtcNow;

@@ -1,7 +1,9 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { BookingService } from '../../../core/services/booking.service';
+import { MechanicService } from '../../../core/services/mechanic.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { Booking, BookingStatus, RepairStatus } from '../../../core/models/booking.model';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -11,7 +13,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 @Component({
   selector: 'app-admin-bookings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, StatusBadgeComponent, IconComponent, EmptyStateComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, StatusBadgeComponent, IconComponent, EmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 max-w-6xl mx-auto">
@@ -22,7 +24,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
             Bookings &amp; <span class="text-[#d70006]">Repairs</span>
           </h1>
           <p class="text-xs sm:text-sm text-neutral-400 mt-1">
-            Comprehensive workshop scheduling, technician bay allocation, and lifecycle tracking.
+            Comprehensive workshop scheduling, technician bay allocation, and live telemetry tracking.
           </p>
         </div>
       </header>
@@ -147,7 +149,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                   <th class="py-3 px-4">Vehicle Details</th>
                   <th class="py-3 px-4">Services</th>
                   <th class="py-3 px-4">Intake Slot</th>
-                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Bay Telemetry</th>
                   <th class="py-3 px-4">Est. Cost</th>
                   <th class="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -176,13 +178,37 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                       <div class="text-[10px] text-neutral-400">{{ b.appointmentTime }}</div>
                     </td>
                     <td class="py-3 px-4">
-                      <app-status-badge [status]="b.status" />
+                      <div class="space-y-1">
+                        <app-status-badge [status]="b.status" />
+                        <div class="flex items-center gap-1.5 text-[10px] text-neutral-400">
+                          <div class="w-12 h-1.5 rounded-full bg-[#1c1b1c] overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-red-600 to-[#d70006] rounded-full" [style.width.%]="b.progressPercent"></div>
+                          </div>
+                          <span class="font-oxanium font-semibold text-white">{{ b.progressPercent }}%</span>
+                        </div>
+                        @if (b.assignedMechanicName && b.assignedMechanicName !== 'To Be Assigned') {
+                          <div class="text-[10px] text-neutral-400 truncate max-w-[130px] flex items-center gap-1">
+                            <app-icon name="user" [size]="10" strokeColor="#878f97" />
+                            <span>{{ b.assignedMechanicName }}</span>
+                          </div>
+                        }
+                      </div>
                     </td>
                     <td class="py-3 px-4 font-oxanium font-bold text-white text-xs">
                       LKR {{ b.estimatedPriceLkr | number }}
                     </td>
                     <td class="py-3 px-4 text-right">
                       <div class="flex items-center justify-end gap-1.5">
+                        <a
+                          [routerLink]="['/customer/track-repair']"
+                          [queryParams]="{ ref: b.referenceNumber }"
+                          target="_blank"
+                          class="px-2.5 py-1 rounded-md bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-neutral-300 hover:text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="View Live Customer Telemetry"
+                        >
+                          <app-icon name="activity" [size]="13" strokeColor="#d70006" />
+                          <span class="hidden sm:inline">Track</span>
+                        </a>
                         <button
                           type="button"
                           class="px-2.5 py-1 rounded-md bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-neutral-300 hover:text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors flex items-center gap-1 cursor-pointer"
@@ -196,7 +222,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                           type="button"
                           class="px-2.5 py-1 rounded-md bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-neutral-300 hover:text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors flex items-center gap-1 cursor-pointer"
                           (click)="openEditModal(b)"
-                          title="Edit Booking"
+                          title="Edit Booking & Bay Telemetry"
                         >
                           <app-icon name="edit" [size]="13" />
                           <span>Edit</span>
@@ -234,8 +260,37 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
             </div>
 
             <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-              <!-- Quick State Progression Bar -->
-              <div class="p-4 rounded-xl bg-[#1c1b1c] border border-[#262526] space-y-2.5">
+              <!-- Live Telemetry Banner (matching Track Repair style) -->
+              <div class="p-4 rounded-xl bg-[#1c1b1c] border border-[#262526] space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#d70006] animate-pulse"></span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 font-oxanium">Live Bay Telemetry &amp; Progress</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-xs font-bold font-oxanium text-[#d70006] bg-[#141314] border border-[#262526]">
+                    {{ modal.progressPercent }}% Complete
+                  </span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-[#141314] border border-[#262526] overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-red-600 to-[#d70006] rounded-full transition-all duration-500" [style.width.%]="modal.progressPercent"></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                  <div>
+                    <span class="text-neutral-500 block text-[10px] uppercase font-oxanium">Bay Handover Estimate</span>
+                    <span class="text-white font-medium font-oxanium">{{ modal.estimatedCompletion || 'Under diagnostic intake' }}</span>
+                  </div>
+                  <div>
+                    <span class="text-neutral-500 block text-[10px] uppercase font-oxanium">Assigned Specialist</span>
+                    <span class="text-white font-medium font-oxanium flex items-center gap-1.5">
+                      <app-icon name="user" [size]="12" strokeColor="#d70006" />
+                      {{ modal.assignedMechanicName || 'To Be Assigned' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick State Progression Bar with Diagnostics Note -->
+              <div class="p-4 rounded-xl bg-[#1c1b1c] border border-[#262526] space-y-3">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 font-oxanium block">Progress Repair Lifecycle:</span>
                 <div class="flex flex-wrap gap-2">
                   <button
@@ -295,6 +350,21 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                     7. Delivered
                   </button>
                 </div>
+
+                <!-- Quick Diagnostic Note to send with status progression -->
+                <div class="pt-2 border-t border-[#262526]">
+                  <label for="quickDiagNote" class="text-[10px] font-semibold text-neutral-400 block mb-1">
+                    Bay Progression Diagnosis Note (Synchronized to customer Track Repair telemetry):
+                  </label>
+                  <input
+                    id="quickDiagNote"
+                    type="text"
+                    [ngModel]="quickNote()"
+                    (ngModelChange)="quickNote.set($event)"
+                    placeholder="e.g. Brake rotors turned and new ceramic pads seated. Ready for road test."
+                    class="w-full bg-[#141314] border border-[#262526] focus:border-[#d70006] rounded-xl px-3 py-1.5 text-xs text-white outline-none transition-colors"
+                  />
+                </div>
               </div>
 
               <!-- Overview Cards -->
@@ -331,18 +401,39 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
               <!-- Diagnostic Notes -->
               <div class="p-4 rounded-xl bg-[#1c1b1c] border border-[#262526] space-y-2">
                 <h4 class="font-oxanium font-bold text-xs uppercase tracking-wider text-white">Customer Symptoms &amp; Notes</h4>
-                <p class="text-xs text-neutral-300 leading-relaxed">{{ modal.problemDescription }}</p>
+                <p class="text-xs text-neutral-300 leading-relaxed">{{ modal.problemDescription || 'No customer symptoms recorded.' }}</p>
               </div>
+
+              @if (modal.internalNotes) {
+                <div class="p-4 rounded-xl bg-[#1c1b1c] border border-[#262526] space-y-2">
+                  <div class="flex items-center gap-2">
+                    <app-icon name="file-text" [size]="14" strokeColor="#d70006" />
+                    <h4 class="font-oxanium font-bold text-xs uppercase tracking-wider text-white">Technician Bay Log &amp; Diagnosis Notes</h4>
+                  </div>
+                  <p class="text-xs text-neutral-300 leading-relaxed whitespace-pre-line">{{ modal.internalNotes }}</p>
+                </div>
+              }
             </div>
 
             <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-[#222222] bg-[#0c0a0a]">
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded-lg bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-neutral-300 hover:text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors cursor-pointer"
-                (click)="closeDetailsModal()"
-              >
-                Close
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="px-3 py-1.5 rounded-lg bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-neutral-300 hover:text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors cursor-pointer"
+                  (click)="closeDetailsModal()"
+                >
+                  Close
+                </button>
+                <a
+                  [routerLink]="['/customer/track-repair']"
+                  [queryParams]="{ ref: modal.referenceNumber }"
+                  target="_blank"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1c1b1c] hover:bg-[#252425] text-xs font-semibold text-neutral-300 hover:text-white border border-[#2b2a2b] hover:border-neutral-500 transition-colors cursor-pointer"
+                >
+                  <app-icon name="external-link" [size]="13" />
+                  <span>Customer Telemetry View</span>
+                </a>
+              </div>
               <button
                 type="button"
                 class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#d70006] hover:bg-[#b80005] text-white rounded-lg font-oxanium text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-[#d70006]/20 cursor-pointer"
@@ -362,7 +453,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
           <div class="w-full max-w-2xl bg-[#141314] border border-[#262526] rounded-2xl shadow-2xl overflow-hidden my-8" (click)="$event.stopPropagation()">
             <div class="flex items-center justify-between px-6 py-4 border-b border-[#222222]">
               <div>
-                <span class="text-[10px] font-bold uppercase tracking-widest text-[#d70006] font-oxanium">BOOKING MODIFICATION</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-[#d70006] font-oxanium">BOOKING &amp; TELEMETRY MODIFICATION</span>
                 <h3 class="text-xl font-bold font-oxanium text-white tracking-wide mt-0.5">Edit {{ editModal.referenceNumber }}</h3>
               </div>
               <button class="text-neutral-400 hover:text-white p-1 rounded cursor-pointer" (click)="closeEditModal()" aria-label="Close modal">
@@ -371,6 +462,94 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
             </div>
 
             <form [formGroup]="editForm" (ngSubmit)="saveEditBooking()" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <!-- Bay Telemetry & Repair Lifecycle Section -->
+              <div class="p-4 rounded-xl bg-[#1c1b1c] border border-[#262526] space-y-3">
+                <div class="flex items-center justify-between">
+                  <h4 class="font-oxanium font-bold text-xs uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+                    <app-icon name="activity" [size]="14" strokeColor="#d70006" />
+                    Workshop Bay Telemetry &amp; Technician
+                  </h4>
+                  <span class="text-[10px] text-[#d70006] font-mono">Real-time sync to Track Repair</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label for="bStatus" class="text-xs font-semibold text-neutral-400 block mb-1">Repair Stage Status <span class="text-[#d70006]">*</span></label>
+                    <select
+                      id="bStatus"
+                      formControlName="status"
+                      (change)="onStatusSelected($any($event.target).value)"
+                      class="w-full bg-[#141314] border border-[#262526] focus:border-[#d70006] rounded-xl px-3.5 py-2 text-white text-xs sm:text-sm outline-none transition-colors cursor-pointer"
+                    >
+                      <option [value]="RepairStatus.PENDING">1. Pending Intake (10%)</option>
+                      <option [value]="RepairStatus.CONFIRMED">2. Confirmed &amp; Scheduled (25%)</option>
+                      <option [value]="RepairStatus.IN_PROGRESS">3. In Progress (Bay Work) (50%)</option>
+                      <option [value]="RepairStatus.WAITING_FOR_PARTS">4. Waiting for Parts (60%)</option>
+                      <option [value]="RepairStatus.ON_HOLD">5. On Hold (60%)</option>
+                      <option [value]="RepairStatus.QUALITY_CHECK">6. Quality QA Inspection (80%)</option>
+                      <option [value]="RepairStatus.READY_FOR_PICKUP">7. Ready for Collection (95%)</option>
+                      <option [value]="RepairStatus.DELIVERED">8. Delivered / Handed Over (100%)</option>
+                      <option [value]="RepairStatus.CANCELLED">Cancelled (0%)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <label for="bProg" class="text-xs font-semibold text-neutral-400">Progress Milestone</label>
+                      <span class="text-[#d70006] font-bold font-oxanium text-xs">{{ editForm.get('progressPercent')?.value }}% Complete</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <input
+                        id="bProg"
+                        type="range"
+                        formControlName="progressPercent"
+                        min="0"
+                        max="100"
+                        step="5"
+                        class="flex-1 accent-[#d70006] cursor-pointer"
+                      />
+                      <input
+                        type="number"
+                        formControlName="progressPercent"
+                        min="0"
+                        max="100"
+                        class="w-16 bg-[#141314] border border-[#262526] focus:border-[#d70006] rounded-xl px-2 py-1.5 text-center text-white text-xs font-oxanium font-bold outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label for="bEstComp" class="text-xs font-semibold text-neutral-400 block mb-1">Bay Estimated Handover</label>
+                    <input
+                      id="bEstComp"
+                      type="text"
+                      formControlName="estimatedCompletion"
+                      placeholder="e.g. Today, 4:30 PM or Ready for Collection"
+                      class="w-full bg-[#141314] border border-[#262526] focus:border-[#d70006] rounded-xl px-3.5 py-2 text-white text-xs sm:text-sm outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label for="bMechanic" class="text-xs font-semibold text-neutral-400 block mb-1">Assigned Specialist Technician</label>
+                    <select
+                      id="bMechanic"
+                      formControlName="assignedMechanicId"
+                      (change)="onMechanicSelected($any($event.target).value)"
+                      class="w-full bg-[#141314] border border-[#262526] focus:border-[#d70006] rounded-xl px-3.5 py-2 text-white text-xs sm:text-sm outline-none transition-colors cursor-pointer"
+                    >
+                      <option value="">To Be Assigned</option>
+                      @for (mech of mechanics(); track mech.id) {
+                        <option [value]="mech.id">
+                          {{ mech.name }} ({{ mech.specialization }}) - {{ mech.status }}
+                        </option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <!-- Schedule Section -->
               <div class="p-4 rounded-xl bg-[#1c1b1c] border border-[#262526] space-y-3">
                 <h4 class="font-oxanium font-bold text-xs uppercase tracking-wider text-neutral-300">Intake Schedule</h4>
@@ -462,8 +641,11 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                   <textarea id="bProb" rows="2" formControlName="problemDescription" class="w-full bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-xl p-3 text-white text-xs sm:text-sm outline-none transition-colors"></textarea>
                 </div>
                 <div>
-                  <label for="bNotes" class="text-xs font-semibold text-neutral-400 block mb-1">Internal Workshop Notes</label>
-                  <textarea id="bNotes" rows="2" formControlName="internalNotes" placeholder="Technician notes, parts orders, QA checks..." class="w-full bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-xl p-3 text-white text-xs sm:text-sm outline-none transition-colors"></textarea>
+                  <div class="flex items-center justify-between mb-1">
+                    <label for="bNotes" class="text-xs font-semibold text-neutral-400">Technician Bay Log &amp; Diagnosis Notes</label>
+                    <span class="text-[10px] text-neutral-500">Visible on Customer Track Repair</span>
+                  </div>
+                  <textarea id="bNotes" rows="3" formControlName="internalNotes" placeholder="Technician notes, diagnostic measurements, parts status..." class="w-full bg-[#1c1b1c] border border-[#262526] focus:border-[#d70006] rounded-xl p-3 text-white text-xs sm:text-sm outline-none transition-colors"></textarea>
                 </div>
               </div>
 
@@ -480,7 +662,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                   [disabled]="editForm.invalid"
                   class="px-4 py-2 rounded-lg text-xs font-bold font-oxanium uppercase tracking-wider bg-[#d70006] hover:bg-[#b80005] text-white shadow-lg shadow-[#d70006]/20 transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  Save Booking Changes
+                  Save Booking &amp; Telemetry
                 </button>
               </div>
             </form>
@@ -492,14 +674,17 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 })
 export class AdminBookingsComponent implements OnInit {
   private bookingService = inject(BookingService);
+  private mechanicService = inject(MechanicService);
   private fb = inject(FormBuilder);
   private toast = inject(ToastService);
 
   RepairStatus = RepairStatus;
   allBookings = this.bookingService.bookings;
+  mechanics = this.mechanicService.mechanics;
 
   searchQuery = signal<string>('');
   statusFilter = signal<string>('ALL');
+  quickNote = signal<string>('');
 
   selectedBooking = signal<Booking | null>(null);
   editingBooking = signal<Booking | null>(null);
@@ -521,6 +706,11 @@ export class AdminBookingsComponent implements OnInit {
     estimatedPriceLkr: [0, [Validators.required, Validators.min(0)]],
     finalPriceLkr: [null],
     paymentStatus: ['pending', Validators.required],
+    status: [RepairStatus.PENDING, Validators.required],
+    progressPercent: [10, [Validators.required, Validators.min(0), Validators.max(100)]],
+    estimatedCompletion: [''],
+    assignedMechanicId: [''],
+    assignedMechanicName: [''],
     plateNumber: ['', Validators.required],
     brand: ['', Validators.required],
     model: ['', Validators.required],
@@ -534,6 +724,7 @@ export class AdminBookingsComponent implements OnInit {
 
   ngOnInit(): void {
     this.bookingService.loadBookings().subscribe();
+    this.mechanicService.loadMechanics().subscribe();
   }
 
   filteredBookings = computed(() => {
@@ -558,12 +749,67 @@ export class AdminBookingsComponent implements OnInit {
     return list;
   });
 
+  onStatusSelected(newStatus: string): void {
+    let defaultPercent = 10;
+    let defaultEstimate = this.editForm.get('estimatedCompletion')?.value || '';
+    switch (newStatus) {
+      case RepairStatus.PENDING:
+        defaultPercent = 10;
+        break;
+      case RepairStatus.CONFIRMED:
+        defaultPercent = 25;
+        break;
+      case RepairStatus.IN_PROGRESS:
+        defaultPercent = 50;
+        break;
+      case RepairStatus.WAITING_FOR_PARTS:
+      case RepairStatus.ON_HOLD:
+        defaultPercent = 60;
+        break;
+      case RepairStatus.QUALITY_CHECK:
+        defaultPercent = 80;
+        break;
+      case RepairStatus.READY_FOR_PICKUP:
+        defaultPercent = 95;
+        defaultEstimate = 'Ready for Collection';
+        break;
+      case RepairStatus.DELIVERED:
+        defaultPercent = 100;
+        defaultEstimate = 'Completed';
+        break;
+      case RepairStatus.CANCELLED:
+        defaultPercent = 0;
+        break;
+    }
+
+    this.editForm.patchValue({
+      progressPercent: defaultPercent,
+      estimatedCompletion: defaultEstimate
+    });
+  }
+
+  onMechanicSelected(mechanicId: string): void {
+    if (!mechanicId) {
+      this.editForm.patchValue({ assignedMechanicId: '', assignedMechanicName: '' });
+      return;
+    }
+    const mech = this.mechanics().find(m => m.id === mechanicId);
+    if (mech) {
+      this.editForm.patchValue({
+        assignedMechanicId: mech.id,
+        assignedMechanicName: mech.name
+      });
+    }
+  }
+
   updateStatus(bookingId: string, status: RepairStatus): void {
-    this.bookingService.updateBookingStatus(bookingId, status).subscribe({
+    const note = this.quickNote().trim();
+    this.bookingService.updateBookingStatus(bookingId, status, note || undefined).subscribe({
       next: (updated) => {
         if (this.selectedBooking()?.id === bookingId) {
           this.selectedBooking.set(updated);
         }
+        this.quickNote.set('');
         this.toast.showSuccess(`Progressed status to ${status.replace('_', ' ')}.`);
       },
       error: (err) => {
@@ -588,6 +834,11 @@ export class AdminBookingsComponent implements OnInit {
       estimatedPriceLkr: b.estimatedPriceLkr,
       finalPriceLkr: b.finalPriceLkr ?? null,
       paymentStatus: b.paymentStatus,
+      status: b.status,
+      progressPercent: b.progressPercent ?? 10,
+      estimatedCompletion: b.estimatedCompletion || '',
+      assignedMechanicId: b.assignedMechanicId || '',
+      assignedMechanicName: b.assignedMechanicName || '',
       plateNumber: b.vehicle.plateNumber,
       brand: b.vehicle.brand,
       model: b.vehicle.model,
@@ -616,6 +867,11 @@ export class AdminBookingsComponent implements OnInit {
       estimatedPriceLkr: Number(val.estimatedPriceLkr),
       finalPriceLkr: val.finalPriceLkr !== null && val.finalPriceLkr !== '' ? Number(val.finalPriceLkr) : undefined,
       paymentStatus: val.paymentStatus,
+      status: val.status,
+      progressPercent: Number(val.progressPercent),
+      estimatedCompletion: val.estimatedCompletion,
+      assignedMechanicId: val.assignedMechanicId || undefined,
+      assignedMechanicName: val.assignedMechanicName || undefined,
       vehicle: {
         ...b.vehicle,
         plateNumber: val.plateNumber,
@@ -635,7 +891,7 @@ export class AdminBookingsComponent implements OnInit {
         if (this.selectedBooking()?.id === b.id) {
           this.selectedBooking.set(updated);
         }
-        this.toast.showSuccess(`Booking ${b.referenceNumber} updated successfully.`);
+        this.toast.showSuccess(`Booking ${b.referenceNumber} updated with bay telemetry.`);
         this.closeEditModal();
       },
       error: (err) => {

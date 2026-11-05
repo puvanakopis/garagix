@@ -30,3 +30,4 @@ public interface ITrackRepairService
     /// <returns>List of customer repair summaries.</returns>
     Task<IReadOnlyList<TrackFeedSummaryDto>> GetCustomerFeedsAsync(string customerId, CancellationToken cancellationToken = default);
 }
+
