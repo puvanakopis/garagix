@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ServiceCatalogService } from '../../../core/services/service-catalog.service';
@@ -116,15 +116,39 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
                   </div>
                 </div>
 
-                <!-- Right Column: Visual Showcase & Active Status -->
-                <div class="relative h-[320px] sm:h-[440px] overflow-hidden border border-[#292929] group">
-                  <img [src]="srv.imageUrl" [alt]="srv.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
-                  <div class="absolute bottom-4 right-4 flex items-center text-xs text-white">
-                    <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 text-[0.6875rem] font-bold uppercase tracking-wider backdrop-blur-sm flex items-center gap-1.5">
-                      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      Active Service Bay
-                    </span>
+                <!-- Right Column: Package Telemetry & Rate Card (No Image) -->
+                <div class="bg-[#121112] border border-[#262526] p-6 sm:p-8 flex flex-col justify-between gap-6">
+                  <div>
+                    <div class="flex items-center justify-between gap-2 pb-4 border-b border-[#222222]">
+                      <span class="text-xs uppercase font-bold tracking-wider text-gx-primary font-display">Service Estimate</span>
+                      <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 text-[0.6875rem] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Active Bay
+                      </span>
+                    </div>
+
+                    <div class="mt-4">
+                      <span class="text-xs text-neutral-400 block font-sans">Starting Rate from</span>
+                      <span class="font-display font-bold text-3xl sm:text-4xl text-white">LKR {{ srv.startingPriceLkr | number }}</span>
+                    </div>
+
+                    @if (srv.commonSymptoms && srv.commonSymptoms.length > 0) {
+                      <div class="mt-6 pt-4 border-t border-[#222222]">
+                        <span class="text-[0.6875rem] font-bold text-neutral-400 font-display uppercase tracking-wider block mb-2">Common Signs / Symptoms:</span>
+                        <div class="flex flex-wrap gap-1.5">
+                          @for (sym of srv.commonSymptoms; track sym) {
+                            <span class="px-2.5 py-1 rounded bg-[#1c1b1c] border border-[#2b2a2b] text-xs text-neutral-300">
+                              {{ sym }}
+                            </span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="pt-4 border-t border-[#222222] flex items-center justify-between text-xs text-neutral-400 font-sans">
+                    <span>Precision OEM calibration</span>
+                    <span>Genuine parts certified</span>
                   </div>
                 </div>
               </div>
@@ -153,7 +177,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
     </div>
   `
 })
-export class ServicesComponent {
+export class ServicesComponent implements OnInit {
   private serviceCatalog = inject(ServiceCatalogService);
 
   selectedCategory = signal<string>('ALL');
@@ -168,6 +192,10 @@ export class ServicesComponent {
   ];
 
   services = this.serviceCatalog.services;
+
+  ngOnInit(): void {
+    this.serviceCatalog.loadServices(true).subscribe();
+  }
 
   displayedServices = computed(() => {
     const cat = this.selectedCategory();

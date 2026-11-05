@@ -318,7 +318,9 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
                       }
                     </div>
 
-                    <img [src]="service.imageUrl" [alt]="service.name" class="w-16 h-16 rounded-lg object-cover shrink-0 bg-[#141314]" />
+                    <div class="w-12 h-12 rounded-lg bg-[#141314] border border-[#262526] shrink-0 flex items-center justify-center text-[#d70006]">
+                      <app-icon name="tool" [size]="20" strokeColor="#d70006" />
+                    </div>
 
                     <div class="flex-1 min-w-0">
                       <div class="text-[9px] uppercase tracking-wider font-bold text-[#d70006] font-oxanium">{{ service.category }}</div>
@@ -669,7 +671,7 @@ export class BookRepairComponent implements OnInit {
   });
 
   // Step 2: Selected services
-  selectedServiceIds = signal<string[]>(['srv-1']);
+  selectedServiceIds = signal<string[]>([]);
 
   // Step 3: Symptoms & Problem
   selectedSymptoms = signal<string[]>([]);
@@ -721,6 +723,11 @@ export class BookRepairComponent implements OnInit {
     if (sId) {
       this.selectedServiceIds.set([sId]);
       this.currentStep.set(2);
+    } else {
+      const first = this.allServices()[0];
+      if (first) {
+        this.selectedServiceIds.set([first.id]);
+      }
     }
 
     const u = this.authService.currentUser();
@@ -885,7 +892,8 @@ export class BookRepairComponent implements OnInit {
   resetWizard(): void {
     this.confirmedBooking.set(null);
     this.currentStep.set(1);
-    this.selectedServiceIds.set(['srv-1']);
+    const first = this.allServices()[0];
+    this.selectedServiceIds.set(first ? [first.id] : []);
     this.problemNotes.set('Standard multi-point maintenance check.');
     this.selectedSymptoms.set([]);
   }

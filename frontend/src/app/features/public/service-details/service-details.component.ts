@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ServiceCatalogService } from '../../../core/services/service-catalog.service';
 import { CarService } from '../../../core/models/service.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -27,12 +28,20 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
         <div class="container mx-auto px-4 sm:px-6 max-w-[1240px] grid grid-cols-1 lg:grid-cols-[1.8fr_1fr] gap-10 lg:gap-14 pt-12 items-start">
           <!-- Main Left Column -->
           <main class="space-y-8">
-            <!-- Hero Service Image -->
-            <div class="relative h-[320px] sm:h-[420px] overflow-hidden border border-gx-border bg-gx-card">
-              <img [src]="s.imageUrl" [alt]="s.name" class="w-full h-full object-cover" />
-              <div class="absolute top-4 left-4 bg-black/80 border border-white/20 text-white font-display text-xs font-bold px-3 py-1.5 uppercase tracking-wider backdrop-blur-sm">
-                {{ s.category }}
+            <!-- Category & Badge Headline Banner (No Image) -->
+            <div class="bg-gx-card border border-gx-border p-6 flex items-center justify-between gap-4">
+              <div class="flex items-center gap-3">
+                <span class="bg-gx-primary text-white font-display text-xs font-bold px-3 py-1.5 uppercase tracking-wider">
+                  {{ s.category }}
+                </span>
+                <span class="text-xs text-neutral-400 font-sans">
+                  Workshop Package Specifications
+                </span>
               </div>
+              <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 text-[0.6875rem] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Active Bay
+              </span>
             </div>
 
             <!-- Overview -->
@@ -160,12 +169,18 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
     }
   `
 })
-export class ServiceDetailsComponent {
+export class ServiceDetailsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private serviceCatalog = inject(ServiceCatalogService);
+  private paramMap = toSignal(this.route.paramMap);
+
+  ngOnInit(): void {
+    this.serviceCatalog.loadServices(true).subscribe();
+  }
 
   service = computed<CarService | undefined>(() => {
-    const id = this.route.snapshot.paramMap.get('id') || 'general-car-maintenance';
+    const map = this.paramMap();
+    const id = map?.get('id') || this.route.snapshot.paramMap.get('id') || 'general-car-maintenance';
     return this.serviceCatalog.getServiceById(id) || this.serviceCatalog.getServices()[0];
   });
 

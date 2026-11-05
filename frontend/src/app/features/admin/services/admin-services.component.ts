@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ServiceCatalogService } from '../../../core/services/service-catalog.service';
@@ -123,7 +123,9 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                   <tr class="hover:bg-[#181717] transition-colors">
                     <td class="py-3 px-4">
                       <button type="button" (click)="openViewModal(s)" class="cursor-pointer block" title="View service details">
-                        <img [src]="s.imageUrl" [alt]="s.name" class="w-12 h-9 rounded-md object-cover bg-[#1c1b1c] border border-[#262526] hover:opacity-80 transition-opacity" />
+                        <div class="w-10 h-10 rounded-lg bg-[#1c1b1c] border border-[#262526] flex items-center justify-center text-[#d70006] hover:border-[#d70006]/50 transition-colors">
+                          <app-icon name="tool" [size]="16" strokeColor="#d70006" />
+                        </div>
                       </button>
                     </td>
                     <td class="py-3 px-4">
@@ -295,57 +297,11 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                 </div>
               </div>
 
-              <!-- 3. Banner Image & Visibility Toggles -->
+              <!-- 3. Visibility Status -->
               <div class="space-y-4">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-400 font-oxanium pb-1 border-b border-[#222222]">
-                  3. Media &amp; Visibility Status
+                  3. Visibility Status
                 </h4>
-                <div>
-                  <label class="text-xs font-semibold text-neutral-300 block mb-2">Package Banner Image</label>
-                  <div class="flex items-center gap-4 p-3 bg-[#1c1b1c] border border-[#262526] rounded-xl">
-                    <div class="w-24 h-16 rounded-lg overflow-hidden border-2 border-[#262526] bg-[#141314] shrink-0 flex items-center justify-center">
-                      @if (imagePreview() || serviceForm.get('imageUrl')?.value) {
-                        <img
-                          [src]="imagePreview() || serviceForm.get('imageUrl')?.value"
-                          alt="Service preview"
-                          class="w-full h-full object-cover"
-                        />
-                      } @else {
-                        <app-icon name="wrench" [size]="20" strokeColor="#878f97" />
-                      }
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <input
-                        #fileInput
-                        type="file"
-                        accept="image/png, image/jpeg, image/jpg, image/webp"
-                        class="hidden"
-                        (change)="onFileSelected($event)"
-                      />
-                      <div class="flex items-center gap-2">
-                        <button
-                          type="button"
-                          (click)="fileInput.click()"
-                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#252425] hover:bg-[#2e2d2e] text-xs font-semibold text-neutral-200 hover:text-white border border-[#333233] hover:border-neutral-500 transition-colors cursor-pointer"
-                        >
-                          <app-icon name="upload" [size]="14" />
-                          <span>Upload Image</span>
-                        </button>
-                        @if (imagePreview()) {
-                          <button
-                            type="button"
-                            (click)="removeImage(fileInput)"
-                            class="px-2 py-1 text-xs text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
-                          >
-                            Reset
-                          </button>
-                        }
-                      </div>
-                      <p class="text-[11px] text-neutral-400 mt-1">PNG, JPG, or WEBP (up to 3MB)</p>
-                    </div>
-                  </div>
-                </div>
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <label class="flex items-start gap-2.5 p-3 rounded-xl bg-[#1c1b1c] border border-[#262526] cursor-pointer hover:border-[#333233] transition-colors">
                     <input id="srvActive" type="checkbox" formControlName="isActive" class="w-4 h-4 mt-0.5 accent-[#d70006] rounded" />
@@ -503,10 +459,13 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
                 </button>
                 <button
                   type="submit"
-                  [disabled]="serviceForm.invalid"
-                  class="px-5 py-2 rounded-lg text-xs font-bold font-oxanium uppercase tracking-wider bg-[#d70006] hover:bg-[#b80005] text-white shadow-lg shadow-[#d70006]/20 transition-colors cursor-pointer disabled:opacity-50"
+                  [disabled]="serviceForm.invalid || isSaving()"
+                  class="px-5 py-2 rounded-lg text-xs font-bold font-oxanium uppercase tracking-wider bg-[#d70006] hover:bg-[#b80005] text-white shadow-lg shadow-[#d70006]/20 transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
                 >
-                  {{ editingServiceId() ? 'Save Changes' : 'Create Package' }}
+                  @if (isSaving()) {
+                    <span class="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                  }
+                  <span>{{ isSaving() ? 'Saving...' : (editingServiceId() ? 'Save Changes' : 'Create Package') }}</span>
                 </button>
               </div>
             </form>
@@ -533,30 +492,28 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 
             <!-- Modal Content -->
             <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-              <!-- Visual Hero Image with Overlays -->
-              <div class="relative rounded-xl overflow-hidden border border-[#262526] bg-[#0c0b0c] h-48 sm:h-56">
-                <img [src]="srv.imageUrl" [alt]="srv.name" class="w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
-                <div class="absolute top-3 left-3 flex items-center gap-2">
-                  <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider font-oxanium bg-[#d70006] text-white">
-                    {{ srv.category }}
-                  </span>
-                  <span
-                    class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider"
-                    [ngClass]="srv.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 backdrop-blur-xs' : 'bg-red-500/20 text-red-400 border border-red-500/40 backdrop-blur-xs'"
-                  >
-                    {{ srv.isActive ? 'Active' : 'Inactive' }}
-                  </span>
-                </div>
-                <div class="absolute bottom-3 inset-x-3 flex items-end justify-between gap-4">
-                  <div>
-                    <span class="text-[11px] text-neutral-400 block">Starting Estimate</span>
-                    <span class="text-xl sm:text-2xl font-bold font-oxanium text-white">LKR {{ srv.startingPriceLkr | number }}</span>
+              <!-- Package Overview Header Card (No Image) -->
+              <div class="rounded-xl border border-[#262526] bg-[#1c1b1c] p-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider font-oxanium bg-[#d70006] text-white">
+                      {{ srv.category }}
+                    </span>
+                    <span
+                      class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider"
+                      [ngClass]="srv.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'"
+                    >
+                      {{ srv.isActive ? 'Active' : 'Inactive' }}
+                    </span>
                   </div>
-                  <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141314]/90 border border-[#262526] text-xs font-semibold text-neutral-200 backdrop-blur-xs">
+                  <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141314] border border-[#262526] text-xs font-semibold text-neutral-200">
                     <app-icon name="clock" [size]="14" strokeColor="#d70006" />
                     <span>{{ srv.durationMinutes }} mins avg turnaround</span>
                   </div>
+                </div>
+                <div>
+                  <span class="text-[11px] text-neutral-400 block">Starting Estimate</span>
+                  <span class="text-xl sm:text-2xl font-bold font-oxanium text-white">LKR {{ srv.startingPriceLkr | number }}</span>
                 </div>
               </div>
 
@@ -637,7 +594,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
     </div>
   `
 })
-export class AdminServicesComponent {
+export class AdminServicesComponent implements OnInit {
   private serviceCatalog = inject(ServiceCatalogService);
   private fb = inject(FormBuilder);
   private toast = inject(ToastService);
@@ -648,9 +605,9 @@ export class AdminServicesComponent {
   searchQuery = signal<string>('');
   selectedCategory = signal<string>('ALL');
 
+  isSaving = signal<boolean>(false);
   showFormModal = signal<boolean>(false);
   editingServiceId = signal<string | null>(null);
-  imagePreview = signal<string>('');
   viewingService = signal<CarService | null>(null);
 
   serviceToDelete = signal<CarService | null>(null);
@@ -678,7 +635,6 @@ export class AdminServicesComponent {
     durationMinutes: [60, [Validators.required, Validators.min(15)]],
     shortDescription: ['', Validators.required],
     fullDescription: ['', Validators.required],
-    imageUrl: ['https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80'],
     featured: [false],
     isActive: [true]
   });
@@ -696,6 +652,12 @@ export class AdminServicesComponent {
       return matchCat && matchQ;
     });
   });
+
+  ngOnInit(): void {
+    this.serviceCatalog.loadServices(false).subscribe({
+      error: () => this.toast.showError('Could not sync latest services from backend.')
+    });
+  }
 
   onNameInput(): void {
     if (!this.editingServiceId()) {
@@ -744,7 +706,6 @@ export class AdminServicesComponent {
 
   openAddModal(): void {
     this.editingServiceId.set(null);
-    this.imagePreview.set('https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80');
     this.serviceForm.reset({
       name: '',
       slug: '',
@@ -753,7 +714,6 @@ export class AdminServicesComponent {
       durationMinutes: 60,
       shortDescription: '',
       fullDescription: '',
-      imageUrl: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80',
       featured: false,
       isActive: true
     });
@@ -773,7 +733,6 @@ export class AdminServicesComponent {
 
   openEditModal(s: CarService): void {
     this.editingServiceId.set(s.id);
-    this.imagePreview.set(s.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80');
     this.serviceForm.patchValue({
       name: s.name,
       slug: s.slug || this.generateSlug(s.name),
@@ -782,7 +741,6 @@ export class AdminServicesComponent {
       durationMinutes: s.durationMinutes,
       shortDescription: s.shortDescription,
       fullDescription: s.fullDescription || s.shortDescription,
-      imageUrl: s.imageUrl,
       featured: s.featured ?? false,
       isActive: s.isActive
     });
@@ -796,30 +754,6 @@ export class AdminServicesComponent {
   closeFormModal(): void {
     this.showFormModal.set(false);
     this.editingServiceId.set(null);
-    this.imagePreview.set('');
-  }
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    if (file.size > 3 * 1024 * 1024) {
-      this.toast.showError('Image file is too large. Please select an image under 3MB.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      this.imagePreview.set(dataUrl);
-      this.serviceForm.patchValue({ imageUrl: dataUrl });
-    };
-    reader.readAsDataURL(file);
-  }
-
-  removeImage(fileInput?: HTMLInputElement): void {
-    if (fileInput) fileInput.value = '';
-    this.imagePreview.set('');
-    this.serviceForm.patchValue({ imageUrl: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80' });
   }
 
   saveServiceForm(): void {
@@ -839,7 +773,6 @@ export class AdminServicesComponent {
       durationMinutes: Number(val.durationMinutes),
       shortDescription: val.shortDescription.trim(),
       fullDescription: (val.fullDescription || val.shortDescription).trim(),
-      imageUrl: val.imageUrl || 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80',
       featured: Boolean(val.featured),
       isActive: Boolean(val.isActive),
       includedItems: this.includedItems(),
@@ -847,20 +780,46 @@ export class AdminServicesComponent {
     };
 
     const id = this.editingServiceId();
-    if (id) {
-      this.serviceCatalog.updateService(id, payload);
-      this.toast.showSuccess(`Updated ${val.name} successfully.`);
-    } else {
-      this.serviceCatalog.addService(payload);
-      this.toast.showSuccess(`Added ${val.name} to service catalog.`);
-    }
+    this.isSaving.set(true);
 
-    this.closeFormModal();
+    if (id) {
+      this.serviceCatalog.updateService(id, payload).subscribe({
+        next: (saved) => {
+          this.isSaving.set(false);
+          this.toast.showSuccess(`Updated ${saved.name} successfully.`);
+          this.closeFormModal();
+        },
+        error: (err) => {
+          this.isSaving.set(false);
+          const msg = err?.error?.message || 'Failed to update service.';
+          this.toast.showError(msg);
+        }
+      });
+    } else {
+      this.serviceCatalog.createService(payload).subscribe({
+        next: (created) => {
+          this.isSaving.set(false);
+          this.toast.showSuccess(`Added ${created.name} to service catalog.`);
+          this.closeFormModal();
+        },
+        error: (err) => {
+          this.isSaving.set(false);
+          const msg = err?.error?.message || 'Failed to create service.';
+          this.toast.showError(msg);
+        }
+      });
+    }
   }
 
   toggleActive(s: CarService): void {
-    this.serviceCatalog.updateService(s.id, { isActive: !s.isActive });
-    this.toast.showInfo(`${s.name} is now ${!s.isActive ? 'Active' : 'Inactive'}.`);
+    this.serviceCatalog.updateService(s.id, { isActive: !s.isActive }).subscribe({
+      next: () => {
+        this.toast.showInfo(`${s.name} is now ${!s.isActive ? 'Active' : 'Inactive'}.`);
+      },
+      error: () => {
+        this.toast.showError(`Failed to update status for ${s.name}.`);
+      }
+    });
   }
 
   requestDelete(s: CarService): void {
@@ -871,10 +830,17 @@ export class AdminServicesComponent {
   confirmDelete(): void {
     const s = this.serviceToDelete();
     if (s) {
-      this.serviceCatalog.deleteService(s.id);
-      this.toast.showSuccess(`Removed ${s.name} from catalog.`);
-      this.deleteDialogOpen.set(false);
-      this.serviceToDelete.set(null);
+      this.serviceCatalog.deleteService(s.id).subscribe({
+        next: () => {
+          this.toast.showSuccess(`Removed ${s.name} from catalog.`);
+          this.deleteDialogOpen.set(false);
+          this.serviceToDelete.set(null);
+        },
+        error: (err) => {
+          const msg = err?.error?.message || 'Failed to remove service from catalog.';
+          this.toast.showError(msg);
+        }
+      });
     }
   }
 

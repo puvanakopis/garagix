@@ -27,6 +27,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<PendingRegistration> PendingRegistrations => Set<PendingRegistration>();
 
+    /// <summary>
+    /// Gets the vehicle repair and maintenance services database set.
+    /// </summary>
+    public DbSet<ServiceItem> Services => Set<ServiceItem>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

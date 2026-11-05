@@ -16,7 +16,6 @@ export interface CarService {
   fullDescription: string;
   startingPriceLkr: number;
   durationMinutes: number;
-  imageUrl: string;
   featured?: boolean;
   isActive: boolean;
   includedItems: string[];

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -105,17 +105,12 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
           @for (service of filteredServices(); track service.id) {
             <div class="bg-[#141314] border border-[#222222] hover:border-neutral-700 rounded-xl p-4 flex flex-col justify-between gap-4 transition-colors">
               <div>
-                <!-- Image Header with Badges -->
-                <div class="relative h-44 rounded-lg overflow-hidden bg-[#1c1b1c] mb-3.5">
-                  <img
-                    [src]="service.imageUrl"
-                    [alt]="service.name"
-                    class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
-                  <span class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded bg-[#100e0f]/90 backdrop-blur-xs border border-[#262526] text-[10px] font-bold uppercase tracking-wider text-[#d70006] font-oxanium">
+                <!-- Category & Rate Header (No Image) -->
+                <div class="flex items-center justify-between gap-2 p-3 rounded-lg bg-[#1c1b1c] border border-[#262526] mb-3.5">
+                  <span class="px-2 py-0.5 rounded bg-[#100e0f] border border-[#262526] text-[10px] font-bold uppercase tracking-wider text-[#d70006] font-oxanium">
                     {{ service.category }}
                   </span>
-                  <span class="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded bg-[#100e0f]/90 backdrop-blur-xs border border-[#262526] text-[11px] font-oxanium font-bold text-white">
+                  <span class="text-xs font-oxanium font-bold text-white">
                     From LKR {{ service.startingPriceLkr | number }}
                   </span>
                 </div>
@@ -165,7 +160,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
     </div>
   `
 })
-export class CustomerServicesComponent {
+export class CustomerServicesComponent implements OnInit {
   private serviceCatalog = inject(ServiceCatalogService);
 
   searchQuery = signal<string>('');
@@ -173,6 +168,10 @@ export class CustomerServicesComponent {
 
   categories = this.serviceCatalog.categories;
   allServices = computed(() => this.serviceCatalog.getServices());
+
+  ngOnInit(): void {
+    this.serviceCatalog.loadServices(true).subscribe();
+  }
 
   totalServicesCount = computed(() => this.allServices().length);
   maintenanceCount = computed(() => this.allServices().filter(s => s.category === 'Maintenance').length);

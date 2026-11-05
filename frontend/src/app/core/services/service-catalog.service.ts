@@ -1,257 +1,25 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, catchError, of, tap, throwError } from 'rxjs';
 import { CarService, ServiceCategory } from '../models/service.model';
+import { environment } from '../../../environments/environment';
 
+/**
+ * Service providing vehicle service catalog operations.
+ * Communicates exclusively with the backend API without hardcoded mock records.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class ServiceCatalogService {
-  private initialServices: CarService[] = [
-    {
-      id: 'srv-1',
-      name: 'General Car Maintenance',
-      slug: 'general-car-maintenance',
-      category: 'Maintenance',
-      shortDescription: 'Complete 40-point preventive maintenance inspection and fluid top-up service.',
-      fullDescription: 'Our comprehensive General Car Maintenance package keeps your car running at peak performance. It encompasses multi-point mechanical inspections, engine fluid condition assessments, belt checks, filter cleaning, and tire pressure adjustments designed for tropical Sri Lankan driving conditions.',
-      startingPriceLkr: 18500,
-      durationMinutes: 120,
-      imageUrl: 'https://images.unsplash.com/photo-1625047509168-a7026f36de04?w=800&auto=format&fit=crop&q=80',
-      featured: true,
-      isActive: true,
-      includedItems: [
-        '40-Point safety & mechanical inspection',
-        'Top-up of steering, brake, and washer fluids',
-        'Air and cabin filter inspection/cleaning',
-        'Spark plug & ignition system inspection',
-        'Battery load and terminal check',
-        'Underbody & suspension inspection'
-      ],
-      commonSymptoms: [
-        'Approaching scheduled service interval (5,000 / 10,000 km)',
-        'Sluggish acceleration or decreased fuel efficiency',
-        'Subtle rattling sounds over uneven road surfaces',
-        'Planning long-distance travel across provinces'
-      ],
-      recommendedMechanicIds: ['mech-1', 'mech-2']
-    },
-    {
-      id: 'srv-2',
-      name: 'Engine Repair & Overhaul',
-      slug: 'engine-repair-and-overhaul',
-      category: 'Engine & Transmission',
-      shortDescription: 'Advanced engine diagnostics, cylinder head servicing, and timing component repairs.',
-      fullDescription: 'From mysterious engine knock and timing chain replacements to full cylinder rebuilds, our certified engine specialists employ computerized bore-scopes, compression testers, and factory repair procedures to restore factory horsepower and reliability.',
-      startingPriceLkr: 48000,
-      durationMinutes: 360,
-      imageUrl: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80',
-      featured: true,
-      isActive: true,
-      includedItems: [
-        'Computerized diagnostic scan and live sensor analysis',
-        'Cylinder compression and leak-down test',
-        'Timing belt / timing chain alignment check',
-        'Gasket, seal, and oil leak remediation',
-        'Fuel injector cleaning & calibration',
-        'Post-repair dynamometer road testing'
-      ],
-      commonSymptoms: [
-        'Check Engine light illuminated or flashing',
-        'Excessive white, blue, or black exhaust smoke',
-        'Metallic knocking or ticking engine noise',
-        'Loss of power during highway acceleration or uphill climbs',
-        'Engine overheating or frequent coolant loss'
-      ],
-      recommendedMechanicIds: ['mech-1']
-    },
-    {
-      id: 'srv-3',
-      name: 'Brake Repair & System Tuning',
-      slug: 'brake-repair-and-tuning',
-      category: 'Brakes & Tires',
-      shortDescription: 'High-performance ceramic brake pad replacement, disc rotor skimming, and ABS bleed.',
-      fullDescription: 'Your safety is non-negotiable. Our technicians inspect and service hydraulic lines, calibrate ABS actuators, skim or replace warped disc rotors, and install dust-free ceramic brake pads for decisive stopping distance.',
-      startingPriceLkr: 14500,
-      durationMinutes: 90,
-      imageUrl: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
-      featured: true,
-      isActive: true,
-      includedItems: [
-        'Front & rear brake pad thickness measurement',
-        'Brake caliper slide pin lubrication',
-        'Disc rotor micrometer runout check & skimming',
-        'DOT 4 / DOT 5.1 high-temp fluid bleed',
-        'Emergency handbrake cable adjustment'
-      ],
-      commonSymptoms: [
-        'High-pitched squealing or grinding when braking',
-        'Brake pedal feels soft or sinks to the floor',
-        'Vibration felt through steering wheel while stopping',
-        'Vehicle pulls noticeably to one side under braking'
-      ],
-      recommendedMechanicIds: ['mech-3']
-    },
-    {
-      id: 'srv-4',
-      name: 'Premium Oil Change & Lube Service',
-      slug: 'premium-oil-change-lube',
-      category: 'Maintenance',
-      shortDescription: 'Full synthetic oil replacement with OEM filter and chassis lubrication.',
-      fullDescription: 'Keep your engine lubricated and protected from high thermal breakdown. Includes draining old oil, installing genuine OEM oil filter, pouring premium full-synthetic API-SP motor oil, and lubricating door hinges and chassis linkages.',
-      startingPriceLkr: 12500,
-      durationMinutes: 45,
-      imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
-      featured: false,
-      isActive: true,
-      includedItems: [
-        'Up to 4 liters of premium full synthetic 0W-20 / 5W-30 engine oil',
-        'Genuine OEM oil filter & new drain plug crush washer',
-        'Reset of vehicle oil maintenance reminder',
-        'Complementary under-hood dust wash & fluid check'
-      ],
-      commonSymptoms: [
-        'Engine oil change indicator light on dashboard',
-        'Dark, grimy oil on dipstick inspection',
-        'Engine runs louder with increased valve chatter'
-      ],
-      recommendedMechanicIds: ['mech-2']
-    },
-    {
-      id: 'srv-5',
-      name: 'Auto AC Repair & Climate Control',
-      slug: 'auto-ac-repair-climate-control',
-      category: 'AC & Climate',
-      shortDescription: 'Evaporator leak detection, compressor testing, R134a/R1234yf gas recharge.',
-      fullDescription: 'In our tropical climate, an ice-cold air conditioning system is an essential comfort. We vacuum-test for refrigerant leaks, flush clogged condenser lines, replace antibacterial cabin filters, and service compressors.',
-      startingPriceLkr: 16500,
-      durationMinutes: 120,
-      imageUrl: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80',
-      featured: true,
-      isActive: true,
-      includedItems: [
-        'Electronic halogen refrigerant leak detection',
-        'AC system vacuum pressure test',
-        'Compressor clutch & coil electrical check',
-        'R134a / R1234yf precision gas recharge with PAG oil',
-        'Cabin antimicrobial ozone decontamination'
-      ],
-      commonSymptoms: [
-        'AC blowing warm or ambient air only',
-        'Unpleasant moldy odor through AC vents',
-        'Hissing noise when AC button is pressed',
-        'Water pooling on front passenger floorboard'
-      ],
-      recommendedMechanicIds: ['mech-6']
-    },
-    {
-      id: 'srv-6',
-      name: 'Tire Replacement & Wheel Balancing',
-      slug: 'tire-replacement-and-wheel-balancing',
-      category: 'Brakes & Tires',
-      shortDescription: 'Laser wheel balancing, brand-new tire fitting, and road force optimization.',
-      fullDescription: 'Equip your vehicle with superior wet-grip tires from Michelin, Continental, or Bridgestone. Every installation includes high-precision dynamic wheel balancing and new rubber valve stems.',
-      startingPriceLkr: 22000,
-      durationMinutes: 60,
-      imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=80',
-      featured: false,
-      isActive: true,
-      includedItems: [
-        'Tire demounting and computerized bead mounting',
-        'Laser dynamic wheel balancing on Corghi machine',
-        'Replacement of tire air valve cores',
-        'Nitrogen tire inflation for stable tire pressure',
-        'Tire tread depth and irregular wear inspection'
-      ],
-      commonSymptoms: [
-        'Steering vibration at 70 - 100 km/h highway speeds',
-        'Tread depth worn below legal limit (1.6mm)',
-        'Cracking, sidewall bulging, or puncture damage'
-      ],
-      recommendedMechanicIds: ['mech-4']
-    },
-    {
-      id: 'srv-7',
-      name: 'Battery & Hybrid System Check',
-      slug: 'battery-and-hybrid-system-check',
-      category: 'Electrical & Battery',
-      shortDescription: 'High-voltage hybrid battery cell balancing, inverter cooling, 12V test.',
-      fullDescription: 'Specialized diagnostic service for Toyota Prius, Axio, Honda Vezel, and modern EV/Hybrid platforms. We conduct cell internal resistance logging, hybrid cooling fan cleaning, and auxiliary 12V AGM battery health testing.',
-      startingPriceLkr: 19500,
-      durationMinutes: 90,
-      imageUrl: 'https://images.unsplash.com/photo-1599256621730-535171e28e50?w=800&auto=format&fit=crop&q=80',
-      featured: true,
-      isActive: true,
-      includedItems: [
-        'Hybrid battery cell voltage differential scan',
-        'High voltage inverter coolant inspection',
-        'Hybrid blower motor & cooling duct decontamination',
-        '12V battery Cold Cranking Amps (CCA) load test',
-        'Alternator/DC-DC converter charging voltage test'
-      ],
-      commonSymptoms: [
-        'Check Hybrid System warning on instrument cluster',
-        'Hybrid battery indicator drops rapidly and charges quickly',
-        'Engine running continuously without switching to EV mode',
-        'Car fails to start after parked overnight'
-      ],
-      recommendedMechanicIds: ['mech-5']
-    },
-    {
-      id: 'srv-8',
-      name: '3D Wheel Alignment & Suspension Tuning',
-      slug: '3d-wheel-alignment-suspension',
-      category: 'Brakes & Tires',
-      shortDescription: 'Computerized 3D camera wheel alignment and shock absorber diagnostic.',
-      fullDescription: 'Eliminate uneven tire wear and steering drift with our Corghi 3D camera alignment rack. We accurately calibrate camber, caster, and toe angles to exact manufacturer tolerances.',
-      startingPriceLkr: 9500,
-      durationMinutes: 60,
-      imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
-      featured: false,
-      isActive: true,
-      includedItems: [
-        '4-Wheel 3D camera sensor calibration',
-        'Toe-in / toe-out steering angle adjustment',
-        'Camber & caster angles alignment',
-        'Steering rack centering and tie-rod check',
-        'Before and after printed angle telemetry report'
-      ],
-      commonSymptoms: [
-        'Steering wheel off-center when driving straight',
-        'Uneven inner or outer tire edge wear',
-        'Car wandering or pulling left/right on flat expressway'
-      ],
-      recommendedMechanicIds: ['mech-4']
-    },
-    {
-      id: 'srv-9',
-      name: 'Comprehensive Pre-Purchase Inspection',
-      slug: 'comprehensive-pre-purchase-inspection',
-      category: 'Diagnostics',
-      shortDescription: '120-point independent mechanical, chassis, paint gauge, and computer scan.',
-      fullDescription: 'Buying a used car? Protect your investment. Our master technicians inspect for accidental structural damage, flood immersion, odometer tampering, engine compression, and paint thickness consistency.',
-      startingPriceLkr: 25000,
-      durationMinutes: 150,
-      imageUrl: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=800&auto=format&fit=crop&q=80',
-      featured: true,
-      isActive: true,
-      includedItems: [
-        '120-Point bumper-to-bumper vehicle inspection',
-        'Digital coating thickness gauge check for repaint/filler',
-        'Full vehicle ECU scan for stored and pending error codes',
-        'Undercarriage chassis frame inspection for accident welds',
-        'Extensive road test under varying engine load and braking',
-        'Formal 10-page printed condition audit with photo proof'
-      ],
-      commonSymptoms: [
-        'Prospective buyer evaluating a private or dealership vehicle',
-        'Vehicle warranty expiration check',
-        'Selling your car and wishing to provide verified condition proof'
-      ],
-      recommendedMechanicIds: ['mech-1', 'mech-2']
-    }
-  ];
+  private http = inject(HttpClient);
+  private apiUrl = `${environment.apiUrl}/services`;
 
-  private _services = signal<CarService[]>(this.initialServices);
+  // Start with an empty collection; populated strictly via API
+  private _services = signal<CarService[]>([]);
   services = this._services.asReadonly();
+  loading = signal<boolean>(false);
+  error = signal<string | null>(null);
 
   categories = signal<ServiceCategory[]>([
     'Maintenance',
@@ -263,30 +31,145 @@ export class ServiceCatalogService {
     'Body & Detailing'
   ]);
 
+  constructor() {
+    // Automatically load live services from backend API upon application startup
+    this.loadServices().subscribe({
+      error: (err) => console.error('Failed to load initial services from API:', err)
+    });
+  }
+
+  /**
+   * Fetches service packages from the backend API.
+   * Public users can call this without authentication.
+   * @param activeOnly If true, filters for active services only. If false/omitted, gets all.
+   * @param category Optional category filter.
+   * @param search Optional search keyword.
+   */
+  loadServices(activeOnly?: boolean, category?: string, search?: string): Observable<CarService[]> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    let params = new HttpParams();
+    if (activeOnly !== undefined) {
+      params = params.set('activeOnly', activeOnly.toString());
+    }
+    if (category && category !== 'ALL') {
+      params = params.set('category', category);
+    }
+    if (search && search.trim()) {
+      params = params.set('search', search.trim());
+    }
+
+    return this.http.get<CarService[]>(this.apiUrl, { params }).pipe(
+      tap({
+        next: (items) => {
+          this._services.set(items ?? []);
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.error.set('Failed to load services from server.');
+          this.loading.set(false);
+        }
+      }),
+      catchError((err) => {
+        return of(this._services());
+      })
+    );
+  }
+
+  /**
+   * Retrieves single service details by ID or URL slug from the backend API.
+   * Publicly accessible without login.
+   */
+  fetchServiceByIdOrSlug(idOrSlug: string): Observable<CarService> {
+    return this.http.get<CarService>(`${this.apiUrl}/${idOrSlug}`).pipe(
+      tap((service) => {
+        // If not already in cache or updated, merge into local signal
+        this._services.update(current => {
+          const exists = current.some(s => s.id === service.id);
+          return exists ? current.map(s => s.id === service.id ? service : s) : [...current, service];
+        });
+      }),
+      catchError((err) => throwError(() => err))
+    );
+  }
+
+  /**
+   * Returns currently cached services from the local reactive signal.
+   */
   getServices(): CarService[] {
     return this._services();
   }
 
+  /**
+   * Finds a service by primary identifier or slug from the local reactive signal.
+   */
   getServiceById(id: string): CarService | undefined {
     return this._services().find(s => s.id === id || s.slug === id);
   }
 
-  addService(service: Omit<CarService, 'id'>): void {
-    const newService: CarService = {
-      ...service,
-      id: 'srv-' + (this._services().length + 1)
-    };
-    this._services.update(current => [newService, ...current]);
-  }
-
-  updateService(id: string, updated: Partial<CarService>): void {
-    this._services.update(current =>
-      current.map(s => s.id === id ? { ...s, ...updated } : s)
+  /**
+   * Creates a new service package on the backend API.
+   * Restricted to administrators.
+   */
+  createService(service: Omit<CarService, 'id'>): Observable<CarService> {
+    this.loading.set(true);
+    return this.http.post<CarService>(this.apiUrl, service).pipe(
+      tap((created) => {
+        this._services.update(current => [created, ...current.filter(s => s.id !== created.id)]);
+        this.loading.set(false);
+      }),
+      catchError((err) => {
+        this.loading.set(false);
+        return throwError(() => err);
+      })
     );
   }
 
-  deleteService(id: string): void {
-    this._services.update(current => current.filter(s => s.id !== id));
+  /**
+   * Updates an existing service package on the backend API.
+   * Restricted to administrators.
+   */
+  updateService(id: string, updated: Partial<CarService>): Observable<CarService> {
+    this.loading.set(true);
+    return this.http.put<CarService>(`${this.apiUrl}/${id}`, updated).pipe(
+      tap((saved) => {
+        this._services.update(current =>
+          current.map(s => s.id === id ? { ...s, ...saved } : s)
+        );
+        this.loading.set(false);
+      }),
+      catchError((err) => {
+        this.loading.set(false);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * Deletes a service package on the backend API.
+   * Restricted to administrators.
+   */
+  deleteService(id: string): Observable<void> {
+    this.loading.set(true);
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+        this._services.update(current => current.filter(s => s.id !== id));
+        this.loading.set(false);
+      }),
+      catchError((err) => {
+        this.loading.set(false);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * Backward-compatible helper method to add a service package.
+   */
+  addService(service: Omit<CarService, 'id'>): void {
+    this.createService(service).subscribe({
+      error: (err) => console.error('Error adding service package:', err)
+    });
   }
 }
-
