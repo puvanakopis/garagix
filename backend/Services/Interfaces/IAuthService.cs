@@ -74,4 +74,22 @@ public interface IAuthService
     /// <param name="cancellationToken">Cancellation token for aborting the operation.</param>
     /// <returns>The <see cref="UserResponse"/> profile object, or <c>null</c> if not found.</returns>
     Task<UserResponse?> GetCurrentUserAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates profile details for an authenticated user.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="request">Payload containing updated profile fields.</param>
+    /// <param name="cancellationToken">Cancellation token for aborting the operation.</param>
+    /// <returns>The updated <see cref="UserResponse"/> profile object, or <c>null</c> if not found.</returns>
+    Task<UserResponse?> UpdateProfileAsync(string userId, UpdateProfileRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the password for an authenticated user after verifying their current password.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user.</param>
+    /// <param name="request">Payload containing current and new passwords.</param>
+    /// <param name="cancellationToken">Cancellation token for aborting the operation.</param>
+    /// <returns>A tuple indicating success and a status message.</returns>
+    Task<(bool Success, string Message)> ChangePasswordAsync(string userId, ChangePasswordRequest request, CancellationToken cancellationToken = default);
 }

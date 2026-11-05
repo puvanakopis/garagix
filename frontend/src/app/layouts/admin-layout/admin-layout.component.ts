@@ -95,21 +95,38 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
             <app-icon name="settings" [size]="18" />
             <span>Workshop Settings</span>
           </a>
+          <a
+            routerLink="/admin/profile"
+            routerLinkActive="!bg-[#d70006]/10 !text-[#d70006]"
+            (click)="closeMobileSidebar()"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-neutral-300 hover:text-white hover:bg-[#1a1919] transition-all"
+          >
+            <app-icon name="user" [size]="18" />
+            <span>Admin Profile</span>
+          </a>
         </nav>
 
         <div class="p-3 border-t border-[#222222] bg-[#0c0a0a]">
-          <div class="flex items-center gap-3 p-2 rounded-lg bg-[#141314] border border-[#222222]">
+          <a
+            routerLink="/admin/profile"
+            (click)="closeMobileSidebar()"
+            class="flex items-center gap-3 p-2 rounded-lg bg-[#141314] border border-[#222222] hover:border-[#d70006]/40 transition-colors group cursor-pointer"
+          >
             <div class="w-8 h-8 rounded-full bg-[#201517] border border-[#d70006]/40 flex items-center justify-center shrink-0 text-[#d70006] font-bold text-xs font-oxanium">
               {{ authService.currentUser()?.name?.charAt(0) || 'A' }}
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-xs font-semibold text-white truncate">{{ authService.currentUser()?.name }}</p>
+              <p class="text-xs font-semibold text-white truncate group-hover:text-[#d70006] transition-colors">{{ authService.currentUser()?.name }}</p>
               <p class="text-[10px] text-neutral-400 truncate">Workshop Director</p>
             </div>
-            <button class="text-neutral-400 hover:text-red-400 p-1 transition-colors cursor-pointer" (click)="authService.logout()" title="Sign Out">
+            <button
+              class="text-neutral-400 hover:text-red-400 p-1 transition-colors cursor-pointer"
+              (click)="$event.stopPropagation(); authService.logout()"
+              title="Sign Out"
+            >
               <app-icon name="log-out" [size]="16" strokeColor="#fb7185" />
             </button>
-          </div>
+          </a>
         </div>
       </aside>
 
@@ -125,10 +142,14 @@ import { IconComponent } from '../../shared/components/icon/icon.component';
 
           <div class="flex items-center gap-3">
             <!-- Profile Info Pill -->
-            <div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#141314] border border-[#222222]">
+            <a
+              routerLink="/admin/profile"
+              class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#141314] border border-[#222222] hover:border-[#d70006]/40 transition-colors cursor-pointer"
+              title="View Admin Profile"
+            >
               <span class="px-1.5 py-0.5 rounded bg-[#d70006] text-white text-[9px] font-bold font-oxanium">ADMIN</span>
               <span class="text-xs font-medium text-white">{{ authService.currentUser()?.name?.split(' ')?.[0] }}</span>
-            </div>
+            </a>
           </div>
         </header>
 

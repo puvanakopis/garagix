@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../../core/services/toast.service';
+import { WorkshopSettingsService } from '../../../core/services/workshop-settings.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -146,7 +147,7 @@ import { environment } from '../../../../environments/environment';
                     <circle cx="12" cy="10" r="3"/>
                   </svg>
                 </div>
-                <span class="leading-relaxed">{{ env.workshopAddress }}</span>
+                <span class="leading-relaxed">{{ workshopSettings.address() }}</span>
               </li>
               <li class="flex items-start gap-3">
                 <div class="w-8 h-8 rounded bg-[#141314] border border-[#292929] flex items-center justify-center shrink-0 mt-0.5">
@@ -154,7 +155,7 @@ import { environment } from '../../../../environments/environment';
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                   </svg>
                 </div>
-                <a [href]="'tel:' + env.supportPhone" class="leading-relaxed hover:text-white transition-colors">{{ env.supportPhone }}</a>
+                <a [href]="'tel:' + workshopSettings.phone()" class="leading-relaxed hover:text-white transition-colors">{{ workshopSettings.phone() }}</a>
               </li>
               <li class="flex items-start gap-3">
                 <div class="w-8 h-8 rounded bg-[#141314] border border-[#292929] flex items-center justify-center shrink-0 mt-0.5">
@@ -163,7 +164,7 @@ import { environment } from '../../../../environments/environment';
                     <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                   </svg>
                 </div>
-                <a [href]="'mailto:' + env.supportEmail" class="leading-relaxed hover:text-white transition-colors">{{ env.supportEmail }}</a>
+                <a [href]="'mailto:' + workshopSettings.email()" class="leading-relaxed hover:text-white transition-colors">{{ workshopSettings.email() }}</a>
               </li>
               <li class="flex items-start gap-3">
                 <div class="w-8 h-8 rounded bg-[#141314] border border-[#292929] flex items-center justify-center shrink-0 mt-0.5">
@@ -172,7 +173,7 @@ import { environment } from '../../../../environments/environment';
                     <polyline points="12 6 12 12 16 14"/>
                   </svg>
                 </div>
-                <span class="leading-relaxed">Workshop Open: Mon - Sat (8:00 AM - 6:30 PM)</span>
+                <span class="leading-relaxed">Workshop Open: Mon - Fri ({{ workshopSettings.mondayFridayOpen() }} - {{ workshopSettings.mondayFridayClose() }}), Sat ({{ workshopSettings.saturdayHours() }})</span>
               </li>
             </ul>
           </div>
@@ -183,7 +184,7 @@ import { environment } from '../../../../environments/environment';
       <div class="border-t border-[#1a1a1a] bg-[#070606] py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#58595b]">
           <p>
-            Copyright &copy; 2026 <span class="text-[#d70006] font-medium">{{ env.appName }}</span>. All Rights Reserved.
+            Copyright &copy; 2026 <span class="text-[#d70006] font-medium">{{ workshopSettings.workshopName() }}</span>. All Rights Reserved.
           </p>
           <div class="flex items-center gap-3">
             <a routerLink="/auth/login" class="hover:text-white transition-colors">Staff Login</a>
@@ -199,6 +200,7 @@ import { environment } from '../../../../environments/environment';
 })
 export class FooterComponent {
   readonly env = environment;
+  readonly workshopSettings = inject(WorkshopSettingsService);
   private toastService = inject(ToastService);
   emailInput = '';
 

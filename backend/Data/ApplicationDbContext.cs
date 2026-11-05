@@ -42,6 +42,11 @@ public class ApplicationDbContext : DbContext
     /// </summary>
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
 
+    /// <summary>
+    /// Gets the workshop configuration and operating settings database set.
+    /// </summary>
+    public DbSet<WorkshopSetting> WorkshopSettings => Set<WorkshopSetting>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

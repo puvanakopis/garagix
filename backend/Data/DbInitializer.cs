@@ -185,6 +185,49 @@ public static class DbInitializer
                 }
             }
             await context.SaveChangesAsync();
+
+            // Explicitly ensure the workshop_settings table exists
+            const string createWorkshopSettingsTableSql = """
+                CREATE TABLE IF NOT EXISTS `workshop_settings` (
+                    `Id` VARCHAR(50) NOT NULL PRIMARY KEY,
+                    `WorkshopName` VARCHAR(150) NOT NULL,
+                    `RegNumber` VARCHAR(50) NOT NULL,
+                    `Phone` VARCHAR(30) NOT NULL,
+                    `EmergencyPhone` VARCHAR(30) NOT NULL,
+                    `Email` VARCHAR(150) NOT NULL,
+                    `Address` VARCHAR(300) NOT NULL,
+                    `Description` LONGTEXT NULL,
+                    `FacilityBay` VARCHAR(100) NOT NULL,
+                    `WorkshopStatus` VARCHAR(50) NOT NULL,
+                    `AlertsEngineStatus` VARCHAR(100) NOT NULL,
+                    `MondayFridayOpen` VARCHAR(20) NOT NULL,
+                    `MondayFridayClose` VARCHAR(20) NOT NULL,
+                    `SaturdayHours` VARCHAR(100) NOT NULL,
+                    `SundayHours` VARCHAR(150) NOT NULL,
+                    `ActiveWorkingDays` VARCHAR(300) NOT NULL,
+                    `SlotDurationMinutes` INT NOT NULL DEFAULT 60,
+                    `ConcurrentHydraulicBays` INT NOT NULL DEFAULT 6,
+                    `FreeCancellationHours` INT NOT NULL DEFAULT 4,
+                    `MaxAdvanceBookingDays` INT NOT NULL DEFAULT 30,
+                    `AutomatedBookingConfirmationSms` TINYINT(1) NOT NULL DEFAULT 1,
+                    `TechnicianStatusChangeBroadcast` TINYINT(1) NOT NULL DEFAULT 1,
+                    `CollectionBayReadyNotification` TINYINT(1) NOT NULL DEFAULT 1,
+                    `CreatedAt` DATETIME(6) NOT NULL,
+                    `UpdatedAt` DATETIME(6) NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """;
+
+            await context.Database.ExecuteSqlRawAsync(createWorkshopSettingsTableSql);
+            logger.LogInformation("Database schema initialized and workshop_settings table verified.");
+
+            // Seed workshop settings if empty
+            if (!await context.WorkshopSettings.AnyAsync())
+            {
+                var initialSettings = Configurations.WorkshopSettingConfiguration.GetInitialWorkshopSettings();
+                await context.WorkshopSettings.AddAsync(initialSettings);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Pre-seeded initial garage workshop settings into database.");
+            }
         }
         catch (Exception ex)
         {

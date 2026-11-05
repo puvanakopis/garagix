@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ServiceCatalogService } from '../../../core/services/service-catalog.service';
+import { WorkshopSettingsService } from '../../../core/services/workshop-settings.service';
 import { CarService } from '../../../core/models/service.model';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
@@ -138,13 +139,13 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
 
               <div class="bg-[#0e0d0d] border border-[#222222] p-4 text-center">
                 <div class="text-xs text-gx-text-muted mb-1">Need urgent breakdown assistance?</div>
-                <a href="tel:+94112345678" class="font-display font-bold text-sm text-white hover:text-gx-primary transition-colors inline-flex items-center gap-2 justify-center">
+                <a [href]="'tel:' + workshopSettings.phone()" class="font-display font-bold text-sm text-white hover:text-gx-primary transition-colors inline-flex items-center gap-2 justify-center">
                   <img
                     src="https://cdn.prod.website-files.com/698ef3567c7a09b473a1fac2/6996a7e5b754cce799628515_Services%20Icon%20(1).png"
                     alt="Call Any Time"
                     class="w-[14px] h-[19px] object-contain"
                   />
-                  <span>+94 11 234 5678</span>
+                  <span>{{ workshopSettings.phone() }}</span>
                 </a>
               </div>
             </div>
@@ -172,6 +173,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
 export class ServiceDetailsComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private serviceCatalog = inject(ServiceCatalogService);
+  readonly workshopSettings = inject(WorkshopSettingsService);
   private paramMap = toSignal(this.route.paramMap);
 
   ngOnInit(): void {

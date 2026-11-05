@@ -4,6 +4,7 @@ import { BookingService } from '../../../core/services/booking.service';
 import { MechanicService } from '../../../core/services/mechanic.service';
 import { CustomerService } from '../../../core/services/customer.service';
 import { ReportService } from '../../../core/services/report.service';
+import { WorkshopSettingsService } from '../../../core/services/workshop-settings.service';
 import { RepairStatus } from '../../../core/models/booking.model';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
@@ -75,7 +76,7 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
 
         <div class="bg-[#141314] border border-[#222222] rounded-xl px-4 py-3 flex items-center justify-between">
           <span class="text-xs text-neutral-400 font-medium">Hydraulic Bays</span>
-          <span class="text-xs font-bold font-oxanium text-emerald-400 uppercase">6 Operational</span>
+          <span class="text-xs font-bold font-oxanium text-emerald-400 uppercase">{{ workshopSettings.hydraulicBays() }} Operational</span>
         </div>
       </section>
 
@@ -240,6 +241,7 @@ export class AdminDashboardComponent {
   private mechanicService = inject(MechanicService);
   private customerService = inject(CustomerService);
   private reportService = inject(ReportService);
+  readonly workshopSettings = inject(WorkshopSettingsService);
 
   RepairStatus = RepairStatus;
   allBookings = this.bookingService.bookings;

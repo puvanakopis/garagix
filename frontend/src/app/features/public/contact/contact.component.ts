@@ -1,9 +1,11 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer } from '@angular/platform-browser';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { ToastService } from '../../../core/services/toast.service';
+import { WorkshopSettingsService } from '../../../core/services/workshop-settings.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -47,11 +49,11 @@ import { environment } from '../../../../environments/environment';
                 <div class="text-xs font-bold text-gx-primary uppercase tracking-widest mb-1 font-display">Hub Address</div>
                 <h3 class="font-display text-xl font-bold text-white mb-2">Central Engineering Hub</h3>
                 <p class="text-xs sm:text-sm text-gx-text-secondary leading-relaxed">
-                  {{ env.workshopAddress }}
+                  {{ workshopSettings.address() }}
                 </p>
               </div>
               <div class="mt-6 pt-4 border-t border-[#222222] flex items-center justify-between text-xs text-gx-text-muted">
-                <span>Nawala Flyover Junction</span>
+                <span>{{ workshopSettings.facilityBay() }} Facility</span>
                 <span class="text-gx-primary font-bold">&#10003; Open Bay</span>
               </div>
             </div>
@@ -69,8 +71,8 @@ import { environment } from '../../../../environments/environment';
                 <div class="text-xs font-bold text-gx-primary uppercase tracking-widest mb-1 font-display">Direct Lines</div>
                 <h3 class="font-display text-xl font-bold text-white mb-2">Telephone Inquiries</h3>
                 <p class="text-xs sm:text-sm text-gx-text-secondary leading-relaxed">
-                  General: <a [href]="'tel:' + env.supportPhone" class="text-white hover:text-gx-primary transition-colors font-medium">{{ env.supportPhone }}</a><br>
-                  24/7 Hotline: <a href="tel:+94771234567" class="text-white hover:text-gx-primary transition-colors font-medium">(+94) 77 123 4567</a>
+                  General: <a [href]="'tel:' + workshopSettings.phone()" class="text-white hover:text-gx-primary transition-colors font-medium">{{ workshopSettings.phone() }}</a><br>
+                  24/7 Hotline: <a [href]="'tel:' + workshopSettings.emergencyPhone()" class="text-white hover:text-gx-primary transition-colors font-medium">{{ workshopSettings.emergencyPhone() }}</a>
                 </p>
               </div>
               <div class="mt-6 pt-4 border-t border-[#222222] flex items-center justify-between text-xs text-gx-text-muted">
@@ -88,7 +90,7 @@ import { environment } from '../../../../environments/environment';
                 <div class="text-xs font-bold text-gx-primary uppercase tracking-widest mb-1 font-display">Electronic Mail</div>
                 <h3 class="font-display text-xl font-bold text-white mb-2">Email Correspondence</h3>
                 <p class="text-xs sm:text-sm text-gx-text-secondary leading-relaxed">
-                  <a [href]="'mailto:' + env.supportEmail" class="text-white hover:text-gx-primary transition-colors font-medium">{{ env.supportEmail }}</a>
+                  <a [href]="'mailto:' + workshopSettings.email()" class="text-white hover:text-gx-primary transition-colors font-medium">{{ workshopSettings.email() }}</a>
                 </p>
               </div>
               <div class="mt-6 pt-4 border-t border-[#222222] flex items-center justify-between text-xs text-gx-text-muted">
@@ -106,13 +108,14 @@ import { environment } from '../../../../environments/environment';
                 <div class="text-xs font-bold text-gx-primary uppercase tracking-widest mb-1 font-display">Workshop Hours</div>
                 <h3 class="font-display text-xl font-bold text-white mb-2">Intake Schedule</h3>
                 <p class="text-xs sm:text-sm text-gx-text-secondary leading-relaxed">
-                  Mon - Sat: 8:00 AM - 7:00 PM<br>
-                  Sun: Emergency Recovery Only
+                  Mon - Fri: {{ workshopSettings.mondayFridayOpen() }} - {{ workshopSettings.mondayFridayClose() }}<br>
+                  Sat: {{ workshopSettings.saturdayHours() }}<br>
+                  Sun: {{ workshopSettings.sundayHours() }}
                 </p>
               </div>
               <div class="mt-6 pt-4 border-t border-[#222222] flex items-center justify-between text-xs text-gx-text-muted">
-                <span>6 Operational Days</span>
-                <span class="text-gx-primary font-bold">&#10003; Open Today</span>
+                <span>{{ workshopSettings.activeWorkingDays().length }} Operational Days</span>
+                <span class="text-gx-primary font-bold">&#10003; {{ workshopSettings.workshopStatus() }}</span>
               </div>
             </div>
           </div>
@@ -128,15 +131,15 @@ import { environment } from '../../../../environments/environment';
               <div>
                 <span class="sub-tag-red">CENTRAL ENGINEERING HUB</span>
               </div>
-              <h3 class="font-display text-2xl sm:text-3xl font-bold text-white mb-2">Conveniently Located in Nawala</h3>
+              <h3 class="font-display text-2xl sm:text-3xl font-bold text-white mb-2">Conveniently Located in {{ workshopSettings.facilityBay() }}</h3>
               <p class="text-xs sm:text-sm text-gx-text-secondary mb-6 leading-relaxed">
-                5 minutes from the baseline highway link and Nugegoda junction. Equipped with 8 drive-in service bays and a climate-controlled customer lounge.
+                {{ workshopSettings.description() }} Equipped with {{ workshopSettings.hydraulicBays() }} concurrent hydraulic service bays and customer lounge.
               </p>
             </div>
 
             <div class="relative w-full h-[260px] sm:h-[340px] bg-[#0c0c0d] border border-gx-border-subtle overflow-hidden my-4">
               <iframe
-                src="https://maps.google.com/maps?q=Nawala+Road,+Nugegoda,+Colombo,+Sri+Lanka&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                [src]="mapUrl()"
                 class="w-full h-full border-0"
                 allowfullscreen=""
                 loading="lazy"
@@ -315,8 +318,16 @@ import { environment } from '../../../../environments/environment';
 })
 export class ContactComponent {
   readonly env = environment;
+  readonly workshopSettings = inject(WorkshopSettingsService);
+  private sanitizer = inject(DomSanitizer);
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
+
+  readonly mapUrl = computed(() => {
+    const addr = this.workshopSettings.address();
+    const url = 'https://maps.google.com/maps?q=' + encodeURIComponent(addr) + '&t=&z=15&ie=UTF8&iwloc=&output=embed';
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  });
 
   isSubmitting = signal<boolean>(false);
   submittedSuccess = signal<boolean>(false);

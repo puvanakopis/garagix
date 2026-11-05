@@ -390,6 +390,79 @@ public class AuthService(
         return user == null ? null : MapToUserResponse(user);
     }
 
+    /// <inheritdoc />
+    public async Task<UserResponse?> UpdateProfileAsync(string userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return null;
+        ArgumentNullException.ThrowIfNull(request);
+
+        var user = await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user == null) return null;
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+        {
+            user.Name = request.Name.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Phone))
+        {
+            user.Phone = request.Phone.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Address))
+        {
+            user.Address = request.Address.Trim();
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Profile updated successfully for user ID '{UserId}'.", userId);
+
+        return MapToUserResponse(user);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Success, string Message)> ChangePasswordAsync(string userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return (false, "User identifier is required.");
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+        {
+            return (false, "Current password is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
+        {
+            return (false, "New password must be at least 6 characters in length.");
+        }
+
+        if (request.NewPassword != request.ConfirmPassword)
+        {
+            return (false, "New password and confirmation password do not match.");
+        }
+
+        var user = await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user == null)
+        {
+            return (false, "User account not found.");
+        }
+
+        if (!PasswordHelper.VerifyPassword(request.CurrentPassword, user.PasswordHash))
+        {
+            return (false, "The current password provided is incorrect.");
+        }
+
+        user.PasswordHash = PasswordHelper.HashPassword(request.NewPassword);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Password successfully updated for user ID '{UserId}'.", userId);
+        return (true, "Password has been successfully updated.");
+    }
+
     private static UserResponse MapToUserResponse(User user)
     {
         return new UserResponse

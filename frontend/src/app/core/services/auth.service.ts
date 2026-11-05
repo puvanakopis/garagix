@@ -270,6 +270,37 @@ export class AuthService {
   }
 
   /**
+   * Persists profile updates to the backend API and updates local user signal.
+   */
+  updateProfileApi(updated: Partial<User>): Observable<User> {
+    return this.http.put<User>(`${this.API_URL}/profile`, updated).pipe(
+      tap(user => {
+        if (user) {
+          const current = this._currentUser();
+          const merged = { ...current, ...user };
+          this._currentUser.set(merged);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(this.STORAGE_USER_KEY, JSON.stringify(merged));
+            } catch {}
+          }
+        }
+      })
+    );
+  }
+
+  /**
+   * Updates authenticated user password.
+   */
+  changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.API_URL}/change-password`, {
+      currentPassword,
+      newPassword,
+      confirmPassword
+    });
+  }
+
+  /**
    * Sign out and clear stored session
    */
   logout(): void {

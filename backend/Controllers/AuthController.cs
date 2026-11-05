@@ -197,4 +197,71 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return Ok(user);
     }
+
+    /// <summary>
+    /// Updates the authenticated user's contact details and personal information.
+    /// </summary>
+    /// <param name="request">Profile update details.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The updated user profile.</returns>
+    /// <response code="200">Profile successfully updated.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="404">User not found.</response>
+    [Authorize]
+    [HttpPut("me")]
+    [HttpPut("profile")]
+    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserResponse>> UpdateProfile(
+        [FromBody] UpdateProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { success = false, message = "User not identified in token." });
+        }
+
+        var updated = await _authService.UpdateProfileAsync(userId, request, cancellationToken);
+        if (updated == null)
+        {
+            return NotFound(new { success = false, message = "User record not found." });
+        }
+
+        return Ok(updated);
+    }
+
+    /// <summary>
+    /// Updates the authenticated user's password after verifying the existing credentials.
+    /// </summary>
+    /// <param name="request">Change password payload.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Status message confirming password update.</returns>
+    /// <response code="200">Password successfully updated.</response>
+    /// <response code="400">Invalid old password or confirmation mismatch.</response>
+    /// <response code="401">Unauthorized.</response>
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { success = false, message = "User not identified in token." });
+        }
+
+        var (success, message) = await _authService.ChangePasswordAsync(userId, request, cancellationToken);
+        if (!success)
+        {
+            return BadRequest(new { success = false, message });
+        }
+
+        return Ok(new { success = true, message });
+    }
 }
