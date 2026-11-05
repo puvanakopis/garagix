@@ -54,5 +54,55 @@ export interface Booking {
   dropOffOption: 'drop_off' | 'wait_at_lounge';
   internalNotes?: string;
   paymentStatus: 'pending' | 'partially_paid' | 'paid' | 'refunded';
+  timeline?: RepairProgressStep[];
+}
+
+export interface TrackTimelineStepDto {
+  step: number;
+  key: string;
+  label: string;
+  description: string;
+  timestamp?: string;
+  completed: boolean;
+  current: boolean;
+}
+
+export interface TrackFeedSummaryDto {
+  id: string;
+  referenceNumber: string;
+  vehicleModel: string;
+  vehiclePlate: string;
+  status: string;
+  progressPercent: number;
+}
+
+export interface TrackRepairResponse {
+  id: string;
+  referenceNumber: string;
+  customerId: string;
+  customerName: string;
+  status: RepairStatus | string;
+  progressPercent: number;
+  estimatedCompletion: string;
+  estimatedPriceLkr: number;
+  finalPriceLkr?: number;
+  paymentStatus: 'pending' | 'partially_paid' | 'paid' | 'refunded' | string;
+  vehicle: {
+    plateNumber: string;
+    brand: string;
+    model: string;
+    year: number;
+    mileageKm?: number;
+  };
+  serviceNames: string[];
+  problemDescription: string;
+  assignedMechanicName: string;
+  internalNotes?: string;
+  dropOffOption: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  timeline: TrackTimelineStepDto[];
+  createdAt: string;
+  updatedAt?: string;
 }
 

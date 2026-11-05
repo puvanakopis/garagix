@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, of, tap, throwError } from 'rxjs';
-import { Booking, BookingStatus, RepairProgressStep, RepairStatus } from '../models/booking.model';
+import { Booking, BookingStatus, RepairProgressStep, RepairStatus, TrackFeedSummaryDto, TrackRepairResponse } from '../models/booking.model';
 import { environment } from '../../../environments/environment';
 
 export interface CreateBookingPayload {
@@ -39,6 +39,7 @@ export interface CreateBookingPayload {
 export class BookingService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/bookings`;
+  private trackApiUrl = `${environment.apiUrl}/track-repair`;
 
   private initialBookings: Booking[] = [
     {
@@ -235,10 +236,12 @@ export class BookingService {
   ];
 
   private _bookings = signal<Booking[]>(this.initialBookings);
+  private _activeFeeds = signal<TrackFeedSummaryDto[]>([]);
   private _loading = signal<boolean>(false);
   private _error = signal<string | null>(null);
 
   readonly bookings = this._bookings.asReadonly();
+  readonly activeFeeds = this._activeFeeds.asReadonly();
   readonly isLoading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
@@ -328,6 +331,75 @@ export class BookingService {
    */
   getBookingById(id: string): Observable<Booking> {
     return this.http.get<Booking>(`${this.apiUrl}/${id}`);
+  }
+
+  /**
+   * Loads public active workshop telemetry feeds for quick-selection dropdowns.
+   */
+  loadActiveFeeds(): Observable<TrackFeedSummaryDto[]> {
+    return this.http.get<TrackFeedSummaryDto[]>(`${this.trackApiUrl}/active-feeds`).pipe(
+      tap((feeds) => {
+        if (feeds) this._activeFeeds.set(feeds);
+      }),
+      catchError(() => of(this._activeFeeds()))
+    );
+  }
+
+  /**
+   * Loads customer specific active telemetry feeds.
+   */
+  loadCustomerFeeds(customerId: string): Observable<TrackFeedSummaryDto[]> {
+    return this.http.get<TrackFeedSummaryDto[]>(`${this.trackApiUrl}/customer/${customerId}`).pipe(
+      tap((feeds) => {
+        if (feeds && feeds.length > 0) {
+          this._activeFeeds.set(feeds);
+        }
+      }),
+      catchError(() => this.loadActiveFeeds())
+    );
+  }
+
+  /**
+   * Dedicated real-time vehicle repair telemetry endpoint with milestone timeline,
+   * workshop diagnostics, and bay status.
+   */
+  trackRepair(referenceOrPlate: string): Observable<TrackRepairResponse> {
+    const clean = referenceOrPlate.trim();
+    return this.http.get<TrackRepairResponse>(`${this.trackApiUrl}/${encodeURIComponent(clean)}`).pipe(
+      tap((res) => {
+        if (res) {
+          this._bookings.update(curr => {
+            const exists = curr.some(b => b.id === res.id);
+            const bookingItem: Booking = {
+              id: res.id,
+              referenceNumber: res.referenceNumber,
+              customerId: res.customerId,
+              customerName: res.customerName,
+              customerPhone: '',
+              customerEmail: '',
+              vehicle: res.vehicle,
+              serviceIds: [],
+              serviceNames: res.serviceNames as string[],
+              problemDescription: res.problemDescription,
+              assignedMechanicName: res.assignedMechanicName,
+              appointmentDate: res.appointmentDate,
+              appointmentTime: res.appointmentTime,
+              estimatedPriceLkr: res.estimatedPriceLkr,
+              finalPriceLkr: res.finalPriceLkr,
+              status: res.status as RepairStatus,
+              progressPercent: res.progressPercent,
+              estimatedCompletion: res.estimatedCompletion,
+              dropOffOption: (res.dropOffOption as any) || 'drop_off',
+              paymentStatus: (res.paymentStatus as any) || 'pending',
+              internalNotes: res.internalNotes,
+              createdAt: res.createdAt,
+              timeline: res.timeline as any
+            };
+            return exists ? curr.map(b => b.id === res.id ? { ...b, ...bookingItem } : b) : [bookingItem, ...curr];
+          });
+        }
+      })
+    );
   }
 
   /**

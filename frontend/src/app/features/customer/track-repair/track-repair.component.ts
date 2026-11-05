@@ -2,8 +2,9 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } 
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../../core/services/auth.service';
 import { BookingService } from '../../../core/services/booking.service';
-import { Booking, RepairProgressStep, RepairStatus } from '../../../core/models/booking.model';
+import { Booking, RepairProgressStep, RepairStatus, TrackFeedSummaryDto, TrackRepairResponse, TrackTimelineStepDto } from '../../../core/models/booking.model';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
@@ -68,7 +69,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
             <h2 class="text-sm font-bold font-oxanium uppercase tracking-wider text-white">Live Telemetry Feeds</h2>
             <p class="text-xs text-neutral-400">Select any active repair job or search with your booking code</p>
           </div>
-          <span class="text-[11px] font-mono text-neutral-500">{{ allBookings().length }} Active Workshop Jobs</span>
+          <span class="text-[11px] font-mono text-neutral-500">{{ activeFeeds().length }} Active Workshop Jobs</span>
         </div>
 
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -79,14 +80,15 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
               type="text"
               [(ngModel)]="searchCode"
               (keyup.enter)="searchBooking()"
-              placeholder="Search code (e.g. GRX-2026-8942)"
+              placeholder="Search code (e.g. GRX-2026-8941)"
               class="flex-1 bg-transparent border-none text-white text-xs sm:text-sm outline-none placeholder:text-neutral-500 font-mono"
             />
             <button
-              class="px-2.5 py-1 bg-[#d70006] hover:bg-[#b80005] text-white rounded-md font-oxanium text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+              class="px-2.5 py-1 bg-[#d70006] hover:bg-[#b80005] text-white rounded-md font-oxanium text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0 disabled:opacity-50"
+              [disabled]="isLoading()"
               (click)="searchBooking()"
             >
-              Track
+              {{ isLoading() ? 'Tracking...' : 'Track' }}
             </button>
           </div>
 
@@ -98,10 +100,10 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
               (ngModelChange)="selectSample($event)"
               class="w-full bg-[#1c1b1c] border border-[#262526] hover:border-neutral-600 focus:border-[#d70006] rounded-xl px-3.5 py-2.5 text-white text-xs outline-none transition-colors cursor-pointer appearance-none pr-9 font-medium truncate"
             >
-              <option value="" disabled class="bg-[#141314] text-neutral-500">Select Booking</option>
-              @for (item of allBookings(); track item.referenceNumber) {
+              <option value="" disabled class="bg-[#141314] text-neutral-500">Select Active Workshop Job</option>
+              @for (item of activeFeeds(); track item.referenceNumber) {
                 <option [value]="item.referenceNumber" class="bg-[#141314] text-white py-1.5 font-sans">
-                  {{ item.referenceNumber }} - {{ item.vehicle.brand }} {{ item.vehicle.model }}
+                  {{ item.referenceNumber }} - {{ item.vehicleModel }} ({{ item.vehiclePlate }})
                 </option>
               }
             </select>
@@ -254,32 +256,59 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 })
 export class TrackRepairComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private authService = inject(AuthService);
   private bookingService = inject(BookingService);
 
   searchCode = '';
-  currentBooking = signal<Booking | null>(null);
+  currentBooking = signal<TrackRepairResponse | null>(null);
   isLoading = signal<boolean>(false);
 
-  allBookings = this.bookingService.bookings;
+  activeFeeds = this.bookingService.activeFeeds;
 
-  timelineSteps = computed<RepairProgressStep[]>(() => {
+  timelineSteps = computed<TrackTimelineStepDto[] | RepairProgressStep[]>(() => {
     const b = this.currentBooking();
     if (!b) return [];
-    return this.bookingService.getTimelineSteps(b);
+    if (b.timeline && b.timeline.length > 0) {
+      return b.timeline;
+    }
+    return this.bookingService.getTimelineSteps(b as any);
   });
 
   ngOnInit(): void {
-    const ref = this.route.snapshot.queryParams['ref'];
-    if (ref) {
-      this.searchCode = ref;
+    const u = this.authService.currentUser();
+    const refParam = this.route.snapshot.queryParams['ref'];
+
+    if (u?.id) {
+      this.bookingService.loadCustomerFeeds(u.id).subscribe({
+        next: (feeds) => {
+          if (!refParam && !this.searchCode && feeds.length > 0) {
+            this.searchCode = feeds[0].referenceNumber;
+            this.searchBooking();
+          }
+        }
+      });
+    } else {
+      this.bookingService.loadActiveFeeds().subscribe({
+        next: (feeds) => {
+          if (!refParam && !this.searchCode && feeds.length > 0) {
+            this.searchCode = feeds[0].referenceNumber;
+            this.searchBooking();
+          }
+        }
+      });
+    }
+
+    if (refParam) {
+      this.searchCode = refParam;
       this.searchBooking();
     } else {
-      const activeList = this.bookingService.getBookings();
-      const firstActive = activeList.find(b => b.status === RepairStatus.IN_PROGRESS) || activeList[0];
-      if (firstActive) {
-        this.currentBooking.set(firstActive);
-        this.searchCode = firstActive.referenceNumber;
-      }
+      // Default to initial demo code if nothing picked yet
+      setTimeout(() => {
+        if (!this.currentBooking()) {
+          this.searchCode = 'GRX-2026-8941';
+          this.searchBooking();
+        }
+      }, 300);
     }
   }
 
@@ -288,7 +317,7 @@ export class TrackRepairComponent implements OnInit {
     if (!clean) return;
 
     this.isLoading.set(true);
-    this.bookingService.trackBooking(clean).subscribe({
+    this.bookingService.trackRepair(clean).subscribe({
       next: (found) => {
         this.isLoading.set(false);
         this.currentBooking.set(found);
@@ -297,7 +326,33 @@ export class TrackRepairComponent implements OnInit {
         this.isLoading.set(false);
         // Fallback to local memory cache
         const local = this.bookingService.getBookingByReference(clean);
-        this.currentBooking.set(local || null);
+        if (local) {
+          const fallback: TrackRepairResponse = {
+            id: local.id,
+            referenceNumber: local.referenceNumber,
+            customerId: local.customerId,
+            customerName: local.customerName,
+            status: local.status,
+            progressPercent: local.progressPercent,
+            estimatedCompletion: local.estimatedCompletion,
+            estimatedPriceLkr: local.estimatedPriceLkr,
+            finalPriceLkr: local.finalPriceLkr,
+            paymentStatus: local.paymentStatus,
+            vehicle: local.vehicle,
+            serviceNames: local.serviceNames,
+            problemDescription: local.problemDescription,
+            assignedMechanicName: local.assignedMechanicName || 'To Be Assigned',
+            internalNotes: local.internalNotes,
+            dropOffOption: local.dropOffOption,
+            appointmentDate: local.appointmentDate,
+            appointmentTime: local.appointmentTime,
+            timeline: this.bookingService.getTimelineSteps(local) as any,
+            createdAt: local.createdAt
+          };
+          this.currentBooking.set(fallback);
+        } else {
+          this.currentBooking.set(null);
+        }
       }
     });
   }
